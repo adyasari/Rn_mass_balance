@@ -1,0 +1,86 @@
+Rn_review_Rcode
+
+
+Rn_exch__Bqm3
+Rn_exch_u__Bqm3
+
+
+Rn_wat__Bqm3
+Rn_wat_u__Bqm3
+
+Rn_air__Bqm3
+Rn_air_u__Bqm3
+
+Rn_gw__Bqm3
+Rn_gw_u__Bqm3
+
+Rn_offshore__Bqm3
+Rn_offshore_u__Bqm3
+
+Ra226_wat__Bqm3
+Ra226_wat_u__Bqm3
+
+Ra226_sed__Bqg
+Ra226_sed_u__Bqg
+
+temp_wat__oC
+sal_wat
+wind__ms
+meas_t__min = datetime1-datetime2
+#coastal radon measurement time interval in minutes, all other parameters are averaged to this interval
+
+depth__m
+#water depth in meters is either total water depth of a mixed water column OR thickness of radon rich layer/gw plume
+
+f_mix?_Bqm2hr
+
+
+#water/air partitioning coefficient Kw/air; caluclations according to Schubert et al., 2012
+
+kw/air
+fatm
+temp_wat__K= temp_wat__oC+273.15
+
+Kw/air=
+EXP(-76.14+120.36*(100/temp_wat__K)+31.26*LN(temp_wat__K/100)+sal_wat)*
+(-0.2631+0.1673*(temp_wat__K/100)+(-0.0273*(temp_wat__K/100)^2))))* 
+temp_wat__K/273.15
+
+If Rn_exch__Bqm3 provided then: Rn_wat__Bqm3= Rn_exch__Bqm3 * kw/air
+ Rn_wat_u__Bqm3 = Rn_exch_u__Bqm3 / Rn_exch__Bqm3* Rn_wat__Bqm3
+
+If wind__ms > 3
+f_atm_min__Bqm2min =
+((0.45*( wind__ms^1.6)*((0.0086/(10^(-((980/temp_wat__K+1.59)))/600)^-(2/3)))/100)/60)*
+(Rn_wat__Bqm3=- kw/air* Rn_air__Bqm3)
+otherwise
+
+f_atm_min__Bqm2min =
+((0.45*( wind__ms^1.6)*((0.0086/(10^(-((980/temp_wat__K+1.59)))/600)^-(1/2)))/100)/60)*
+(Rn_wat__Bqm3=- kw/air* Rn_air__Bqm3)
+
+f_atm__Bqm2hr = fatm_min__Bqm2min * 60
+
+# The amount of radon diffusing from the bottom sediments can be estimated from an experimentally defined relationship between 226Ra content of sediments and the corresponding measured 222Rn flux by diffusion (Burnett et al., 2003).  That empirical relationship is based on experimental data from several different environments (both marine and fresh):Flux (dpm m-2 day-1) =  495 x 226Ra conc.(dpm g-1) + 18.2 this can be written as f_dif__Bqm2hr = (495 x Ra226_sed__Bqg * 60 + 18.2) / 24
+
+f_dif__Bqm2hr = (495 x Ra226_sed__Bqg * 60 + 18.2) / 24
+
+exRn_wat__Bqm3 =Rn_wat__Bqm3 - Ra226_wat__Bqm3
+
+exRn_wat_inv__Bqm2 = (exRn_wat__Bqm3 * depth__m)
+
+f_Rn_gross__Bqm2hr = (exRn_wat_inv__Bqm2__1 - exRn_wat_inv__Bqm2__2) * 60/meas_t__min
+
+
+if depth__m__2 - depth__m__1 >0 then 
+f_Rn_flood__Bqm2hr = ((depth__m__2 - depth__m__1) * Rn_offshore__Bqm3) * 60/meas_t__min 
+otherwise 
+f_Rn_ebb__Bqm2hr = ((depth__m__2 - depth__m__1) * exRn_wat__Bqm3) * 60/meas_t__min
+
+f_Rn_net__Bqm2hr = f_Rn_gross__Bqm2hr + f_atm__Bqm2hr + f_Rn_ebb__Bqm2hr - f_Rn_flood__Bqm2hr - f_dif__Bqm2hr + f_mix?__Bqm2hr
+
+if f_Rn_net__Bqm2hr <0 then f_mix__Bqm2hr = - f_Rn_net__Bqm2hr otherwise f_mix__Bqm2hr = 0
+
+f_total__Bqm2hr = f_Rn_net__Bqm2hr + f_mix__Bqm2hr
+
+f_gw__m3m2d = (f_total__Bqm2hr / Rn_gw__Bqm3) * 24

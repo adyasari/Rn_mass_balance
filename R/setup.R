@@ -23,7 +23,7 @@ invisible(
   )
 }
 
-# set location relative to project root. use here() instead of path names below.
+# set location relative to project root. use here() instead of path names
 here::i_am("R/setup.R")
 
 # load necessary packages
@@ -33,7 +33,6 @@ library("tidyverse")
 library("magrittr")
 library("lubridate")
 library("tsbox")
-# library(bimets)
 
 # detect conflicts across packages and assign preferences
 conflict_scout()
