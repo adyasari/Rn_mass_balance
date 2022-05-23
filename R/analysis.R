@@ -36,6 +36,10 @@ timser_in <- readxl::read_excel(here("input", excel_file_in), sheet = timser_she
   ts_long() %>% 
   ts_xts()
 
+# *************************
+#  calculations ----
+# *************************
+
 # sample expression 
 temp1 <- ts_lag(timser_in$wind__ms, "1 day") * single_in$Rn_gw_err__Bqm3
 temp2 <- ts_lag(timser_in$wind__ms, "2 min") * single_in$Rn_gw_err__Bqm3
