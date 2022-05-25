@@ -1,5 +1,5 @@
 # *************************
-# Rn mass balance calculation
+# Rn mass balance calculation for time series coastal radon budget
 # Author: Peter Fuleky
 # Date: 2022-05-22
 # notes:
@@ -32,7 +32,7 @@ in_xts <- read_csv(here("input", csv_file_in)) %>%
 #  calculations ----
 # *************************
 
-# add coastal radon measurement time interval in minutes, 
+# adds coastal radon measurement time interval in minutes based on provided measurement times, 
 # all other time series parameters provided by the user should be averaged to this interval
 dat_xts <- in_xts %>%
   ts_c(
@@ -46,21 +46,26 @@ dat_xts <- in_xts %>%
       mutate(value = value %>% as.numeric() / 60)
   )
 
-# water/air partitioning coefficient Kw/air; calculations according to Schubert et al., 2012
+# water temperature converted from degrees Celsius to Kelvin
 dat_xts$temp_wat__K <- dat_xts$temp_wat__C + 273.15
 
-# explain
+# water/air partitioning coefficient kw_air based on water temperature and salinity; 
+# calculations and coefficients from Schubert et al. 2012
 dat_xts$kw_air <-
   exp(-76.14 + 120.36 * (100 / dat_xts$temp_wat__K) + 31.26 * log(dat_xts$temp_wat__K / 100) + dat_xts$sal_wat) *
     (-0.2631 + 0.1673 * (dat_xts$temp_wat__K / 100) + (-0.0273 * (dat_xts$temp_wat__K / 100)^2)) *
     dat_xts$temp_wat__K / 273.15
 
-# explain
+# if Rad-Aqua was used to collect radon data and radon in the exchanger (therfore in air) is provided 
+# it is converted to Rn in water in this step;
+# otherwise, the provided radon in water is used for further calculations
 if (!(in_xts$Rn_exch__Bqm3 %>% is.null()) & !(in_xts$Rn_exch__Bqm3 %>% is.na()) %>% sum()) {
   dat_xts$Rn_wat__Bqm3 <- dat_xts$Rn_exch__Bqm3 * dat_xts$kw_air
 }
 
-# explain
+# Rn losses by evasion into the atmosphere are calculated according to Macyntire et al. 1995
+# for wind speeds above 3.6 m/s Sc^-1/2 and for wind speeds below 3.6 m/s Sc^-2/3 is applied;
+# for wind speeds below 1.5 m/s k is assumed to be constant and equivalent to wind speeds of 1.5 m/s (Ocampo-torres et al., 1994)
 dat_xts <- dat_xts %>%
   ts_tbl() %>%
   ts_wide() %>%
