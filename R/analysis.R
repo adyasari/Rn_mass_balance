@@ -1,5 +1,5 @@
 # *************************
-# Rn mass balance calculation
+# Rn mass balance calculation for time series coastal radon budget
 # Author: Peter Fuleky
 # Date: 2022-05-22
 # notes:
@@ -33,27 +33,32 @@ in_tbl <- read_csv(here("input", csv_file_in)) %>%
 # explain
 dat_tbl <- in_tbl %>%
   mutate(
-    # add coastal radon measurement time interval in minutes,
+    # adds coastal radon measurement time interval in minutes based on provided measurement times, 
     # all other time series parameters provided by the user should be averaged to this interval
     meas_t__min = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60,
 
-    # water/air partitioning coefficient Kw/air; calculations according to Schubert et al., 2012
+    # water temperature converted from degrees Celsius to Kelvin
     temp_wat__K = temp_wat__C + 273.15,
 
-    # explain
+    # water/air partitioning coefficient kw_air based on water temperature and salinity; 
+    # calculations and coefficients from Schubert et al. 2012
     kw_air =
       exp(-76.14 + 120.36 * (100 / temp_wat__K) + 31.26 * log(temp_wat__K / 100) + sal_wat) *
         (-0.2631 + 0.1673 * (temp_wat__K / 100) + (-0.0273 * (temp_wat__K / 100)^2)) *
         temp_wat__K / 273.15,
 
-    # explain
+    # if Rad-Aqua was used to collect radon data and radon in the exchanger (therfore in air) is provided 
+    # it is converted to Rn in water in this step;
+    # otherwise, the provided radon in water is used for further calculations
     Rn_wat__Bqm3 = if (!(Rn_exch__Bqm3 %>% is.null()) & !(Rn_exch__Bqm3 %>% is.na()) %>% any()) {
       Rn_exch__Bqm3 * kw_air
     } else {
       Rn_wat__Bqm3
     },
 
-    # explain
+    # Rn losses by evasion into the atmosphere are calculated according to Macyntire et al. 1995
+    # for wind speeds above 3.6 m/s Sc^-1/2 and for wind speeds below 3.6 m/s Sc^-2/3 is applied;
+    # for wind speeds below 1.5 m/s k is assumed to be constant and equivalent to wind speeds of 1.5 m/s (Ocampo-torres et al., 1994)
     f_atm__Bqm2hr =
       case_when(
         wind__ms > 3.6 ~
