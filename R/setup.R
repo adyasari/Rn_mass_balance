@@ -49,11 +49,11 @@ here()
 # Sys.getenv("api_username")
 # Sys.getenv("api_key")
 
-# define project-wide constants
-# bank start
-bnk_start <- ymd("1900-01-01")
-# bank end
-bnk_end <- ymd("2060-12-31")
+# # define project-wide constants
+# # bank start
+# bnk_start <- ymd("1900-01-01")
+# # bank end
+# bnk_end <- ymd("2060-12-31")
 
 # load user defined utility functions
 source(here("R", "util_funs.R"))

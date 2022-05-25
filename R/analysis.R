@@ -110,7 +110,7 @@ dat_tbl <- in_tbl %>%
       f_mix_exp__Bqm2hr,
 
     # explain
-    f_mix__Bqm2hr <- if_else(f_Rn_net__Bqm2hr < 0,
+    f_mix__Bqm2hr = if_else(f_Rn_net__Bqm2hr < 0,
       -f_Rn_net__Bqm2hr,
       0,
       NA_real_
@@ -122,3 +122,14 @@ dat_tbl <- in_tbl %>%
     # explain
     f_gw__m3m2d = (f_Rn_total__Bqm2hr / Rn_gw__Bqm3) * 24
   )
+
+# interactive time series plot of two variables
+dat_tbl %>% 
+  ts_long() %>%
+  ts_xts() %>%
+  extract(, c("f_Rn_flood__Bqm2hr", "depth__m")) %T>% 
+  {ser_summary <<- ts_summary(.)} %>% 
+  plot_2(rng_start = ser_summary %>% pull(start) %>% min(), 
+         rng_end = ser_summary %>% pull(end) %>% max(), 
+         height = 300, width = 600)
+
