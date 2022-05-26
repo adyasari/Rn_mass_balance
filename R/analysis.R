@@ -38,14 +38,22 @@ dat_tbl <- in_tbl %>%
     # all other time series parameters provided by the user should be averaged to this interval
     meas_t__min = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60,
 
+    # if radon mixing losses are determined va independent method (current measurements, residence time estimates)
+    # then f_mix_exp__Bqm2hr should be provided in the spreadsheet
+    # otherwise, mixing losses will be estimated in teh Rn mass balance
+    f_mix_exp__Bqm2hr = if (!(f_mix_exp__Bqm2hr %>% is.null()) & !(f_mix_exp__Bqm2hr %>% is.na()) %>% any()) {
+      f_mix_exp__Bqm2hr
+    } else {
+      0
+    },
     # water temperature converted from degrees Celsius to Kelvin
     temp_wat__K = temp_wat__C + 273.15,
 
     # water/air partitioning coefficient kw_air based on water temperature and salinity; 
     # calculations and coefficients from Schubert et al. 2012
     kw_air =
-      exp(-76.14 + 120.36 * (100 / temp_wat__K) + 31.26 * log(temp_wat__K / 100) + sal_wat) *
-        (-0.2631 + 0.1673 * (temp_wat__K / 100) + (-0.0273 * (temp_wat__K / 100)^2)) *
+      exp(-76.14 + 120.36 * (100 / temp_wat__K) + 31.26 * log(temp_wat__K / 100) + sal_wat *
+        (-0.2631 + 0.1673 * (temp_wat__K / 100) + (-0.0270 * (temp_wat__K / 100)^2))) *
         temp_wat__K / 273.15,
 
     # if Rad-Aqua was used to collect radon data and radon in the exchanger (therfore in air) is provided 
@@ -57,70 +65,79 @@ dat_tbl <- in_tbl %>%
       Rn_wat__Bqm3
     },
 
-    # Rn losses by evasion into the atmosphere are calculated according to Macyntire et al. 1995
-    # for wind speeds above 3.6 m/s Sc^-1/2 and for wind speeds below 3.6 m/s Sc^-2/3 is applied;
+    
+    # Rn losses by evasion into the atmosphere are calculated according to MacIntyre et al. (1995)
+    # for wind speeds above 3.6 m/s Sc^-1/2 and for wind speeds below 3.6 m/s Sc^-2/3 is applied (Turner et al., 1996);
     # for wind speeds below 1.5 m/s k is assumed to be constant and equivalent to wind speeds of 1.5 m/s (Ocampo-torres et al., 1994)
-    f_atm__Bqm2hr =
+    # note that kinematic viscosity is considered constant, one can calculate more accurate values that account for salinity and temperature
+     f_atm__Bqm2hr =
       case_when(
         wind__ms > 3.6 ~
-          ((0.45 * (wind__ms^1.6) *
-            ((0.0086 / (10^(-((980 / temp_wat__K + 1.59))) / 600)^(-(1 / 2)))) / 100) / 60) *
+          (0.45 * wind__ms^1.6 *
+            ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-1 / 2)) / 100 / 60 *
             (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
         wind__ms > 1.5 ~
-          ((0.45 * (wind__ms^1.6) *
-            ((0.0086 / (10^(-((980 / temp_wat__K + 1.59))) / 600)^(-(2 / 3)))) / 100) / 60) *
+          (0.45 * wind__ms^1.6 *
+             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
             (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
         TRUE ~
-          ((0.45 * (1.5^1.6) *
-            ((0.0086 / (10^(-((980 / temp_wat__K + 1.59))) / 600)^(-(2 / 3)))) / 100) / 60) *
+          (0.45 * 1.5^1.6 *
+             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
             (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60
       ),
 
-    # explain
+    # The amount of radon diffusing from the bottom sediments can be estimated from an experimentally 
+    # defined relationship between 226Ra content of sediments and the corresponding measured 222Rn flux 
+    # by diffusion (Burnett et al., 2003).  That empirical relationship is based on experimental data 
+    # from several different environments (both marine and fresh):Flux (dpm m-2 day-1) =  495 x 226Ra conc.(dpm g-1) + 18.2 
+    # this can be written as f_dif__Bqm2hr = (495 x Ra226_sed__Bqg * 60 + 18.2) / 24
     f_dif__Bqm2hr = (495 * Ra226_sed__Bqg * 60 + 18.2) / 24,
 
-    # explain
+    # excess Rn in water is calculated by sutracting dissolved 226Ra in water
     ex_Rn_wat__Bqm3 = Rn_wat__Bqm3 - Ra226_wat__Bqm3,
 
-    # explain
+    # excess Rn inventory is excess Rn activity times water depth or depth of mixed layer/groundwater plume thickness
     ex_Rn_wat_inv__Bqm2 = ex_Rn_wat__Bqm3 * depth__m,
 
-    # explain
+    # change in radon inventory is the difference between radon inventories in two consecutive time steps
+    # the change in radon inventory is radon flux over the measurement time period and is converted to per hour flux
     f_Rn_gross__Bqm2hr = (ex_Rn_wat_inv__Bqm2 - lag(ex_Rn_wat_inv__Bqm2)) * 60 / meas_t__min,
 
-    # explain
+    # Rn brought in by tides from offshore
     f_Rn_flood__Bqm2hr = if_else(depth__m - lag(depth__m) > 0,
       ((depth__m - lag(depth__m)) * Rn_offshore__Bqm3) * 60 / meas_t__min,
-      NA_real_,
+      0,
       NA_real_
     ),
 
-    # explain
+    # Rn lost from coastal to offshore areas
     f_Rn_ebb__Bqm2hr = if_else(depth__m - lag(depth__m) < 0,
-      ((depth__m - lag(depth__m)) * ex_Rn_wat__Bqm3) * 60 / meas_t__min,
-      NA_real_,
+      (-(depth__m - lag(depth__m)) * ex_Rn_wat__Bqm3) * 60 / meas_t__min,
+      0,
       NA_real_
     ),
 
-    # explain
+    # all derived Rn fluxes summed together to get net Rn change per hour
     f_Rn_net__Bqm2hr = f_Rn_gross__Bqm2hr +
       f_atm__Bqm2hr +
-      f_Rn_ebb__Bqm2hr +
+      f_Rn_ebb__Bqm2hr -
       f_Rn_flood__Bqm2hr -
       f_dif__Bqm2hr +
       f_mix_exp__Bqm2hr,
 
-    # explain
+    # if f_mix_exp__Bqm2hr has not been provided then losses by mixing are set to equal negative f_Rn_net__Bqm2hr
+    # this is a conservative approach providing minimal estimate of mixing loss
     f_mix__Bqm2hr = if_else(f_Rn_net__Bqm2hr < 0,
       -f_Rn_net__Bqm2hr,
       0,
       NA_real_
     ),
 
-    # explain
+    # total radon flux is the one corrected for mixing losses
     f_Rn_total__Bqm2hr = f_Rn_net__Bqm2hr + f_mix__Bqm2hr,
 
-    # explain
+    # groundwater discharge f_gw__m3m2d equals the total Rn flux f_Rn_total__Bqm2hr 
+    # divided by groundwater Rn activity
     f_gw__m3m2d = (f_Rn_total__Bqm2hr / Rn_gw__Bqm3) * 24
   )
 
