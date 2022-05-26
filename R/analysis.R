@@ -141,6 +141,10 @@ dat_tbl <- in_tbl %>%
     f_gw__m3m2d = (f_Rn_total__Bqm2hr / Rn_gw__Bqm3) * 24
   )
 
+# *************************
+#  diagnostics ----
+# *************************
+
 # interactive time series plot of two variables
 dat_tbl %>% 
   ts_long() %>%
@@ -150,6 +154,17 @@ dat_tbl %>%
   plot_2(rng_start = ser_summary %>% pull(start) %>% min(), 
          rng_end = ser_summary %>% pull(end) %>% max(), 
          height = 300, width = 600)
+
+# Compute features
+dat_features <- dat_tbl %>% 
+  ts_long() %>%
+  ts_tsibble() %>% 
+  fabletools::features(value, fabletools::feature_set(pkgs="feasts"))
+# fabletools::features(value, fabletools::feature_set(tags = "autocorrelation"))
+
+# *************************
+#  spectral analysis ----
+# *************************
 
 # get the periodogram of individual series
 spctrm <- dat_tbl %>% 
@@ -204,21 +219,17 @@ ee <- hht::EEMD(dat_tbl %>% pull("depth__m"),
            dat_tbl %>% pull("time") %>% as.numeric(), 100, 100, 6, "trials")
 eec <- hht::EEMDCompile ("trials", 100, 6)
 
-# Compute features
-dat_features <- dat_tbl %>% 
-  ts_long() %>%
-  ts_tsibble() %>% 
-  fabletools::features(value, fabletools::feature_set(pkgs="feasts"))
-  # fabletools::features(value, fabletools::feature_set(tags = "autocorrelation"))
 
-##################
-# EXPERIMENTAL CODE BELOW
-##################
+# *************************
+# EXPERIMENTAL CODE BELOW ----
+# *************************
 
 
-##################
-# REGRESSIONS
-##################
+# *************************
+#  regressions ----
+# *************************
+
+# QUESTION: should the variables be standardized?
 
 # consider only variables that are non-NA
 dat_est <- dat_tbl %>% select(where(~ !(is.na(.x) %>% all()))) %>% select(where(~ (sum(.x - lag(.x), na.rm = TRUE) != 0)))
@@ -268,11 +279,9 @@ pdf(here("output", "scatter_plot_matrix.pdf"), width = 11*3, height = 8.5*3)
 car::scatterplotMatrix(dat_est, smooth = FALSE)
 dev.off()
 
-
-##################
-# SHRINKAGE/PENALIZED METHODS
-##################
-
+# *************************
+#  shrinkage/penalized methods ----
+# *************************
 
 dat1 <- dat_est %>% drop_na() %>% select(-time) %>% scale() %>% as_tibble()
 
@@ -318,9 +327,10 @@ cor_out2 <- cor_w_HI %>% round(2) %>% #select(-contains("Intercept"))
 # as.matrix(dat1) %*% res$rotation - res$x
 # res$x[,1]/res$sd[1]
 
-# library(pls)
+# partial least squares (need to load package, namespace reference not enough)
+library(pls)
 
-pls.model <- pls::plsr(depth__m ~ ., data = dat1, validation = "CV")
+pls.model <- plsr(depth__m ~ ., data = dat1, validation = "CV")
 
 # Find the number of dimensions with the lowest cross validation error
 cv <- RMSEP(pls.model)
@@ -364,15 +374,11 @@ plot(pls.model, plottype = "validation")
 loading.weights(pls.model)
 
 
-
-
-# edited through here
-
 library(caret)
 
 # Split the data into training and test set
 set.seed(123)
-training.samples <- dat1$payrolls %>%
+training.samples <- dat1$depth__m %>%
   createDataPartition(p = 0.8, list = FALSE)
 train.data  <- dat1[training.samples, ]
 test.data <- dat1[-training.samples, ]
@@ -381,12 +387,11 @@ test.data <- dat1[-training.samples, ]
 library(glmnet)
 
 # Predictor variables
-x <- model.matrix(payrolls ~., train.data)[,-1]
+x <- model.matrix(depth__m ~., train.data)[,-1]
 # Outcome variable
-y <- train.data$payrolls
+y <- train.data$depth__m
 
-glmnet(x, y, alpha = 1, lambda = NULL)
-
+# Ridge regression
 # Find the best lambda using cross-validation
 set.seed(123) 
 cv <- cv.glmnet(x, y, alpha = 0)
@@ -397,6 +402,9 @@ cv$lambda.min
 model_RR <- glmnet(x, y, alpha = 0, lambda = cv$lambda.min)
 # Display ridge regression coefficients
 coef(model_RR)
+
+# LASSO
+glmnet(x, y, alpha = 1, lambda = NULL)
 
 # Find the best lambda using cross-validation
 set.seed(123) 
@@ -409,10 +417,10 @@ model_LASSO <- glmnet(x, y, alpha = 1, lambda = cv$lambda.min)
 # Dsiplay regression coefficients
 coef(model_LASSO)
 summary(model_LASSO)
-coef_table <- left_join(tidy(model_RR) %>% select(term, estimate), tidy(model_LASSO) %>% select(term, estimate), by = "term", suffix = c("RIDGE", "LASSO")) %>% 
+coef_table <- left_join(broom::tidy(model_RR) %>% select(term, estimate), broom::tidy(model_LASSO) %>% select(term, estimate), by = "term", suffix = c("RIDGE", "LASSO")) %>% 
   left_join(bind_cols(coef(pls.model) %>% rownames(), coef(pls.model) %>% as_tibble()), by = c("term" = "...1")) %>% 
-  rename("estimatePLS" = "payrolls.4 comps") %>% 
-  left_join(tidy(training_best)) %>% 
+  rename("estimatePLS" = "depth__m.11 comps") %>% 
+  left_join(broom::tidy(training_best)) %>% 
   rename("estimateBEST" = "estimate")
 
 # check weight of 100% filter out intercept.
@@ -437,10 +445,10 @@ coef_table %>% mutate(estimateRIDGE = estimateRIDGE / coef_sums[1],
   
   
   
-  ##################
-  # TEST CODE BELOW THIS LINE
-  ##################
-  
+# *************************
+# TEST CODE BELOW THIS LINE ----
+# *************************
+
   # spectal decomposition
   # seasonal decomposition
   # rising, falling tide
