@@ -208,8 +208,8 @@ eec <- hht::EEMDCompile ("trials", 100, 6)
 dat_features <- dat_tbl %>% 
   ts_long() %>%
   ts_tsibble() %>% 
-  # fabletools::features(value, fabletools::feature_set(pkgs="feasts"))
-  fabletools::features(value, fabletools::feature_set(tags = "autocorrelation"))
+  fabletools::features(value, fabletools::feature_set(pkgs="feasts"))
+  # fabletools::features(value, fabletools::feature_set(tags = "autocorrelation"))
 
 ##################
 # EXPERIMENTAL CODE BELOW
@@ -221,7 +221,7 @@ dat_features <- dat_tbl %>%
 ##################
 
 # consider only variables that are non-NA
-dat_est <- dat_tbl %>% select(where(~ (!is.na(.x) %>% any())))
+dat_est <- dat_tbl %>% select(where(~ !(is.na(.x) %>% all()))) %>% select(where(~ (sum(.x - lag(.x), na.rm = TRUE) != 0)))
 
 # best subset regression
 # library(lmSubsets)
@@ -258,10 +258,10 @@ partial_plot_data <- car::avPlots(lm(as.formula(training_best$terms), data = dat
 )
 dev.off()
 
-cor_mat <- dat_est %>% ts_long() %>% drop_na() %>% ts_wide() %>% select(-time) %>% drop_na() %>% cor() %>% as_tibble() %>% round(2)
+cor_mat <- dat_est %>% select(-time) %>% drop_na() %>% cor() %>% as_tibble() %>% round(2)
 rownames(cor_mat) <- colnames(cor_mat)
 cor_mat <- cor_mat %>% rownames_to_column()
-write_csv(cor_mat, "cor_mat.csv", )
+write_csv(cor_mat, here("output", "cor_mat.csv"), )
 
 # scatter plot matrix
 pdf(here("output", "scatter_plot_matrix.pdf"), width = 11*3, height = 8.5*3)
@@ -274,20 +274,14 @@ dev.off()
 ##################
 
 
-dat3 <- dat_est %>% ts_long() %>% drop_na() %>% ts_wide() %>% select(-time) %>% scale() %>% as_tibble()
-dat1 <- data_reg %>% select(-c(USpayrolls, USmobility, UScases, USdeaths, death:positive)) %>% scale() %>% as.data.frame()
-dat1 <- data_reg %>% select(-c(payrolls:positive, mining:other)) %>% scale() %>% as.data.frame()
-dat1 <- data_reg %>% select(-c(USpayrolls, USmobility, UScases, USdeaths, death:positive)) %>% as.data.frame()
-dat1 <- data_reg %>% select(-c()) %>% as.data.frame()
-dat1 <- dat_est %>% ts_long() %>% drop_na() %>% ts_wide() %>% drop_na() %>% select(-time) %>% scale() %>% as.data.frame()
-rownames(dat1) <- state_last_quant$state
+dat1 <- dat_est %>% drop_na() %>% select(-time) %>% scale() %>% as_tibble()
 
 # obtain automatic report about the PCA
-library(FactoMineR)
-library(FactoInvestigate)
+# library(FactoMineR)
+# library(FactoInvestigate)
 
-res = FactoMineR::PCA(dat1, graph=FALSE, scale.unit = TRUE, ncp = 5)
-FactoInvestigate::Investigate(res, file = 'FactoInvestigateState.Rmd', document = c('pdf_document'), keepRmd = TRUE)
+res <- FactoMineR::PCA(dat1, graph=FALSE, scale.unit = TRUE, ncp = 5)
+FactoInvestigate::Investigate(res, file = here("output", "FactoInvestigateState.Rmd"), document = c("pdf_document"), keepRmd = TRUE)
 dimdesc(res, axes = 1:4, proba = 0.05)
 corr_table <-  dimdesc(res, axes = 1:1)$Dim.1$quanti %>% as.data.frame() %>% rownames_to_column() %>% as_tibble %>% rename_with(~c('Variable Name', 'Correlation', 'p-value'))
 res$var
@@ -295,15 +289,14 @@ res$ind
 res$ind$coord
 res$ind$coord[,1] %>% scale()
 
-dat1reg <- data_reg %>%
-  select(c(payrolls, mobility, cases, deaths, ba_degrees, broadband, dem_sh, pop, pop_dens)) %>%
-  mutate(PC1 = res$ind$coord[, 1] %>% scale(), .after = deaths) %>%
+dat1reg <- dat1 %>%
+  mutate(PC1 = res$ind$coord[, 1] %>% scale()) %>%
   scale() %>%
   as.data.frame()
-lm(payrolls ~ ., dat1reg) %>% summary()
+lm(depth__m ~ ., dat1reg) %>% summary()
 cor_w_HI <- cor(dat1reg)
 # scatter plot matrix
-pdf("scatter_plot_matrix4.pdf", width = 11, height = 8.5)
+pdf(here("output", "scatter_plot_matrix4.pdf"), width = 11, height = 8.5)
 scatterplotMatrix(dat1reg, smooth = FALSE, id = TRUE)
 dev.off()
 
@@ -317,8 +310,6 @@ cor_out2 <- cor_w_HI %>% round(2) %>% #select(-contains("Intercept"))
   # kableExtra::row_spec(3:5, background = "grey")
   kableExtra::footnote(general = "Here is a general comments of the table.", threeparttable = T)
 
-cor(state_last$death, state_last$cases)
-
 # # run PCA
 # res <- prcomp(dat1)
 # summary(res)
@@ -327,13 +318,13 @@ cor(state_last$death, state_last$cases)
 # as.matrix(dat1) %*% res$rotation - res$x
 # res$x[,1]/res$sd[1]
 
-library(pls)
+# library(pls)
 
-pls.model = plsr(payrolls ~ ., data = dat1, validation = "CV")
+pls.model <- pls::plsr(depth__m ~ ., data = dat1, validation = "CV")
 
 # Find the number of dimensions with the lowest cross validation error
-cv = RMSEP(pls.model)
-best.dims = which.min(cv$val[estimate = "adjCV", , ]) - 1
+cv <- RMSEP(pls.model)
+best.dims <- which.min(cv$val[estimate = "adjCV", , ]) - 1
 plot(RMSEP(pls.model), legendpos = "topright")
 plot(pls.model, plottype = "validation")
 
@@ -342,23 +333,23 @@ selectNcomp(pls.model, method = "randomization", plot = TRUE)
 temp <- crossval(pls.model, segments = 10)
 
 # Rerun the model
-pls.model = plsr(payrolls ~ ., data = dat1 %>% select(-c(positive)), ncomp = best.dims)
-pls.model = plsr(payrolls ~ ., data = dat1 %>% select(-c()), ncomp = best.dims, validation = "CV", jackknife = TRUE)
-pls.model = plsr(payrolls ~ ., data = dat1 %>% select(-c()), ncomp = 4)
+pls.model <- plsr(depth__m ~ ., data = dat1 %>% select(-c()), ncomp = best.dims)
+pls.model <- plsr(depth__m ~ ., data = dat1 %>% select(-c()), ncomp = best.dims, validation = "CV", jackknife = TRUE)
 temp <- coefplot(pls.model, se.whiskers = TRUE, labels = "names")
+pls.model <- plsr(depth__m ~ ., data = dat1 %>% select(-c()), ncomp = 4)
 
 pls.model$validation
-pls.model %>% tidy()
+pls.model %>% broom::tidy()
 
-coefficients = coef(pls.model)
-sum.coef = sum(sapply(coefficients, abs))
-coefficients = coefficients * 100 / sum.coef
-coefficients = sort(coefficients[, 1 , 1])
+coefficients <- coef(pls.model)
+sum.coef <- sum(sapply(coefficients, abs))
+coefficients <- coefficients * 100 / sum.coef
+coefficients <- sort(coefficients[, 1 , 1])
 barplot(tail(coefficients, 6))
 barplot((coefficients))
 
 scores(pls.model)
-temp <- loadings(pls.model)
+temp <- pls::loadings(pls.model)
 str(temp)
 temp[[1]]
 
@@ -371,6 +362,11 @@ abline(h = 0)
 plot(pls.model, plottype = "correlation", comps = 1:4)
 plot(pls.model, plottype = "validation")
 loading.weights(pls.model)
+
+
+
+
+# edited through here
 
 library(caret)
 
