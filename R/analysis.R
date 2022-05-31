@@ -15,7 +15,7 @@
 source(here::here("R", "setup.R"))
 
 # input file name
-csv_file_in <- "sgd_ts_data.csv"
+csv_file_in <- "sgd_ts_data_RADAquaMixDif.csv"
 
 # *************************
 #  load data ----
@@ -24,7 +24,7 @@ csv_file_in <- "sgd_ts_data.csv"
 # load the time series
 in_tbl <- read_csv(here("input", csv_file_in)) %>%
   # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
-  mutate(across(.cols = 1, .fns = ymd_hms)) %>%
+  mutate(across(.cols = 1, .fns = ~ parse_date_time(., c("ymdHMS", "mdyHM", "mdyHMS")))) %>%
   mutate(across(.cols = -1, .fns = as.numeric))
 
 # *************************
@@ -38,11 +38,11 @@ dat_tbl <- in_tbl %>%
     # all other time series parameters provided by the user should be averaged to this interval
     meas_t__min = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60,
 
-    # if radon mixing losses are determined va independent method (current measurements, residence time estimates)
+    # if radon mixing losses are determined via an independent method (current measurements, residence time estimates)
     # then f_mix_exp__Bqm2hr should be provided in the spreadsheet
     # otherwise, mixing losses will be estimated in teh Rn mass balance
-    f_mix_exp__Bqm2hr = if (!(f_mix_exp__Bqm2hr %>% is.null()) & !(f_mix_exp__Bqm2hr %>% is.na()) %>% any()) {
-      f_mix_exp__Bqm2hr
+    f_mix_exp__Bqm2hr = if (!(f_mix_exp__Bqm2hr %>% is.null()) & (!(f_mix_exp__Bqm2hr %>% is.na())) %>% any()) {
+      f_mix_exp__Bqm2hr %>% if_else(is.na(.), 0, .)
     } else {
       0
     },
@@ -59,7 +59,7 @@ dat_tbl <- in_tbl %>%
     # if Rad-Aqua was used to collect radon data and radon in the exchanger (therfore in air) is provided 
     # it is converted to Rn in water in this step;
     # otherwise, the provided radon in water is used for further calculations
-    Rn_wat__Bqm3 = if (!(Rn_exch__Bqm3 %>% is.null()) & !(Rn_exch__Bqm3 %>% is.na()) %>% any()) {
+    Rn_wat__Bqm3 = if (!(Rn_exch__Bqm3 %>% is.null()) & (!(Rn_exch__Bqm3 %>% is.na())) %>% any()) {
       Rn_exch__Bqm3 * kw_air
     } else {
       Rn_wat__Bqm3
@@ -91,8 +91,12 @@ dat_tbl <- in_tbl %>%
     # by diffusion (Burnett et al., 2003).  That empirical relationship is based on experimental data 
     # from several different environments (both marine and fresh):Flux (dpm m-2 day-1) =  495 x 226Ra conc.(dpm g-1) + 18.2 
     # this can be written as f_dif__Bqm2hr = (495 x Ra226_sed__Bqg * 60 + 18.2) / 24
-    f_dif__Bqm2hr = (495 * Ra226_sed__Bqg * 60 + 18.2) / 24,
-
+    f_dif__Bqm2hr = if (!(Ra226_sed__Bqg %>% is.null()) & (!(Ra226_sed__Bqg %>% is.na())) %>% any()) {
+      if_else(is.na(Ra226_sed__Bqg), 0, (495 * Ra226_sed__Bqg * 60 + 18.2) / 24)
+    } else {
+      0
+    },
+   #  f_dif__Bqm2hr = (495 * Ra226_sed__Bqg * 60 + 18.2) / 24,
     # excess Rn in water is calculated by sutracting dissolved 226Ra in water
     ex_Rn_wat__Bqm3 = Rn_wat__Bqm3 - Ra226_wat__Bqm3,
 
