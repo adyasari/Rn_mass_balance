@@ -31,16 +31,16 @@ in_tbl <- read_csv(here("input", csv_file_in)) %>%
 #  calculations ----
 # *************************
 
-# explain
+# creates data table
 dat_tbl <- in_tbl %>%
   mutate(
-    # adds coastal radon measurement time interval in minutes based on provided measurement times, 
+    # calculates coastal radon measurement time interval in minutes based on provided measurement times, 
     # all other time series parameters provided by the user should be averaged to this interval
     meas_t__min = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60,
 
     # if radon mixing losses are determined via an independent method (current measurements, residence time estimates)
     # then f_mix_exp__Bqm2hr should be provided in the spreadsheet
-    # otherwise, mixing losses will be estimated in teh Rn mass balance
+    # otherwise, mixing losses will be estimated from the Rn mass balance
     f_mix_exp__Bqm2hr = if (!(f_mix_exp__Bqm2hr %>% is.null()) & (!(f_mix_exp__Bqm2hr %>% is.na())) %>% any()) {
       f_mix_exp__Bqm2hr %>% if_else(is.na(.), 0, .)
     } else {
@@ -96,7 +96,7 @@ dat_tbl <- in_tbl %>%
     } else {
       0
     },
-   #  f_dif__Bqm2hr = (495 * Ra226_sed__Bqg * 60 + 18.2) / 24,
+ 
     # excess Rn in water is calculated by sutracting dissolved 226Ra in water
     ex_Rn_wat__Bqm3 = Rn_wat__Bqm3 - Ra226_wat__Bqm3,
 
