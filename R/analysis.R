@@ -145,6 +145,11 @@ dat_tbl <- in_tbl %>%
     f_gw__m3m2d = (f_Rn_total__Bqm2hr / Rn_gw__Bqm3) * 24
   )
 
+# results saved in a csv file
+write_csv(dat_tbl, here("output", "rn_budget.csv"), na = "")
+  
+# END OF RADON BUDGET CALCULATION
+
 # *************************
 #  diagnostics ----
 # *************************
