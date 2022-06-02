@@ -38,6 +38,8 @@ dat_tbl <- in_tbl %>%
     
     # when a single value is missing interpolate linearly
     Rn_wat__Bqm3 = if_else(is.na(Rn_wat__Bqm3), (lag(Rn_wat__Bqm3) + lead(Rn_wat__Bqm3))/2, Rn_wat__Bqm3),
+    temp_wat__C = if_else(is.na(temp_wat__C), (lag(temp_wat__C) + lead(temp_wat__C))/2, temp_wat__C),
+    sal_wat = if_else(is.na(sal_wat), (lag(sal_wat) + lead(sal_wat))/2, sal_wat),
     
     # calculates coastal radon measurement time interval in minutes based on provided measurement times, 
     # all other time series parameters provided by the user should be averaged to this interval
@@ -148,7 +150,9 @@ dat_tbl <- in_tbl %>%
     # groundwater discharge f_gw__m3m2d equals the total Rn flux f_Rn_total__Bqm2hr 
     # divided by groundwater Rn activity
     f_gw__m3m2d = (f_Rn_total__Bqm2hr / Rn_gw__Bqm3) * 24
-  )
+    
+  ) %>% 
+  select(where(~(!(.x %>% is.na())) %>% any()))
 
 # results saved in a csv file
 write_csv(dat_tbl, here("output", "rn_budget.csv"), na = "")
@@ -163,18 +167,28 @@ write_csv(dat_tbl, here("output", "rn_budget.csv"), na = "")
 dat_tbl %>% 
   ts_long() %>%
   ts_xts() %>%
-  extract(, c("f_Rn_flood__Bqm2hr", "depth__m")) %T>% 
+  extract(, c("f_gw__m3m2d", "depth__m")) %T>% 
   {ser_summary <<- ts_summary(.)} %>% 
   plot_2(rng_start = ser_summary %>% pull(start) %>% min(), 
          rng_end = ser_summary %>% pull(end) %>% max(), 
          height = 300, width = 600)
 
-# Compute features
-dat_features <- dat_tbl %>% 
+# find start of second continuous chunk
+start_2 <- dat_tbl %>% 
   ts_long() %>%
-  ts_tsibble() %>% 
-  fabletools::features(value, fabletools::feature_set(pkgs="feasts"))
-# fabletools::features(value, fabletools::feature_set(tags = "autocorrelation"))
+  filter(id == "f_gw__m3m2d") %>% 
+  mutate(value = is.na(value) - is.na(value) %>% lag(default = 0)) %>% 
+  filter(value %>% as.logical()) %>% 
+  slice(n()) %>% 
+  pull(time)
+
+# # Compute features
+# dat_features <- dat_tbl %>% 
+#   drop_na() %>% 
+#   ts_long() %>%
+#   ts_tsibble() %>% 
+#   fabletools::features(value, fabletools::feature_set(pkgs="feasts"))
+# # fabletools::features(value, fabletools::feature_set(tags = "autocorrelation"))
 
 # *************************
 #  spectral analysis ----
@@ -183,8 +197,9 @@ dat_features <- dat_tbl %>%
 # get the periodogram of individual series
 spctrm <- dat_tbl %>% 
   ts_long() %>%
+  filter(time >= start_2) %>% 
   ts_xts() %>%
-  extract(, c("depth__m")) %>%
+  extract(, c("f_gw__m3m2d")) %>%
   spec.pgram(log = "no") %>% 
   inset2("per", 1/.$freq / 60 / 60 / 24)
 
@@ -202,36 +217,38 @@ tibble(per = spctrm$per, spec = spctrm$spec) %>%
 # singular spectrum analysis
 dat_ssa <- Rssa::ssa(dat_tbl %>% 
                  ts_long() %>%
-                 ts_ts() %>%
-                 extract(, c("depth__m")))
+                   filter(time >= start_2) %>% 
+                   ts_ts() %>%
+                 extract(, c("f_gw__m3m2d")))
 
 plot(dat_ssa)
 summary(dat_ssa)
-plot(dat_ssa, type = "series", groups = 1:25)
+plot(dat_ssa, type = "series", groups = 1:16)
 
 dat_rec <- Rssa::reconstruct(dat_ssa, list(C1=1, C2=2:9, C3=10:11, C4=12:13))
 plot(dat_rec)
 plot(dat_tbl %>% 
        ts_long() %>%
+       filter(time >= start_2) %>% 
        ts_ts() %>%
-       extract(, c("depth__m")), col="gray")
+       extract(, c("f_gw__m3m2d")), col="gray")
 lines(dat_rec$C1)
 
-# empirical mode decomposition
-ee <- EMD::emd(dat_tbl %>% pull("depth__m"), 
-                dat_tbl %>% pull("time") %>% as.numeric())
-
-plot(dat_tbl %>% pull("time"), ee$imf[,1], type="l")
-lines(dat_tbl %>% pull("depth__m"), col="red")
-plot(dat_tbl %>% pull("time"), ee$imf[,2], type="l")
-lines(dat_tbl %>% pull("depth__m"), col="red")
-plot(dat_tbl %>% pull("time"), ee$imf[,3], type="l")
-lines(dat_tbl %>% pull("depth__m"), col="red")
-
-# ensemble empirical mode decomposition (takes a long time!)
-ee <- hht::EEMD(dat_tbl %>% pull("depth__m"), 
-           dat_tbl %>% pull("time") %>% as.numeric(), 100, 100, 6, "trials")
-eec <- hht::EEMDCompile ("trials", 100, 6)
+# # empirical mode decomposition
+# ee <- EMD::emd(dat_tbl %>% filter(time >= start_2) %>% pull("f_gw__m3m2d"), 
+#                 dat_tbl %>% filter(time >= start_2) %>% pull("time") %>% as.numeric())
+# 
+# plot(dat_tbl %>% filter(time >= start_2) %>% pull("time"), ee$imf[,1], type="l")
+# lines(dat_tbl %>% filter(time >= start_2) %>% select("time", "f_gw__m3m2d"), col="red")
+# plot(dat_tbl %>% filter(time >= start_2) %>% pull("time"), ee$imf[,2], type="l")
+# lines(dat_tbl %>% filter(time >= start_2) %>% select("time", "f_gw__m3m2d"), col="red")
+# plot(dat_tbl %>% filter(time >= start_2) %>% pull("time"), ee$imf[,3], type="l")
+# lines(dat_tbl %>% filter(time >= start_2) %>% select("time", "f_gw__m3m2d"), col="red")
+# 
+# # ensemble empirical mode decomposition (takes a long time!)
+# ee <- hht::EEMD(dat_tbl %>% pull("f_gw__m3m2d"), 
+#            dat_tbl %>% pull("time") %>% as.numeric(), 100, 100, 6, "trials")
+# eec <- hht::EEMDCompile ("trials", 100, 6)
 
 
 # *************************
@@ -246,11 +263,16 @@ eec <- hht::EEMDCompile ("trials", 100, 6)
 # QUESTION: should the variables be standardized?
 
 # consider only variables that are non-NA
-dat_est <- dat_tbl %>% select(where(~ !(is.na(.x) %>% all()))) %>% select(where(~ (sum(.x - lag(.x), na.rm = TRUE) != 0)))
+dat_est <- dat_tbl %>% 
+  select(where(~ !(is.na(.x) %>% all()))) %>% 
+  select(where(~ (sum(.x - lag(.x), na.rm = TRUE) != 0))) %>% 
+  filter(time >= start_2) %>% 
+  select(wind__ms, depth__m, winddir, waveht__m, f_gw__m3m2d) %>% 
+  mutate(across(-1, ~ scale(.x) %>% extract(,1)))
 
 # best subset regression
 # library(lmSubsets)
-training_top <- lmSubsets::lmSelect(depth__m ~ ., data = dat_est, nbest = 20, penalty = "AIC", include = NULL, exclude = NULL)
+training_top <- lmSubsets::lmSelect(f_gw__m3m2d ~ ., data = dat_est, nbest = 20, penalty = "AIC", include = NULL, exclude = NULL)
 
 summary(training_top)
 image(training_top)
@@ -260,7 +282,7 @@ training_top %>% formula(best = 1)
 training_top %>% variable.names(best = 1)
 
 training_best <- training_top %>% 
-  formula(best = 1) %>% 
+  formula(best = 8) %>% 
   as.formula() %>% 
   lm(data = dat_est)
 # refit()
@@ -275,7 +297,7 @@ training_best_coef_tab <- training_best_coef %>%
 
 # library(car)
 pdf(here("output", "partial_plot_state.pdf"), width = 11, height = 8.5)
-# partial_plot_data <- car::avPlots(lm(depth__m ~ ., data = dat_est), 
+# partial_plot_data <- car::avPlots(lm(f_gw__m3m2d ~ ., data = dat_est), 
 #                                   main=paste("Partial Regression Plot")
 # )
 partial_plot_data <- car::avPlots(lm(as.formula(training_best$terms), data = dat_est), 
@@ -283,7 +305,8 @@ partial_plot_data <- car::avPlots(lm(as.formula(training_best$terms), data = dat
 )
 dev.off()
 
-cor_mat <- dat_est %>% select(-time) %>% drop_na() %>% cor() %>% as_tibble() %>% round(2)
+# cor_mat <- dat_est %>% select(-time) %>% drop_na() %>% cor() %>% as_tibble() %>% round(2)
+cor_mat <- dat_est %>% drop_na() %>% cor() %>% as_tibble() %>% round(2)
 rownames(cor_mat) <- colnames(cor_mat)
 cor_mat <- cor_mat %>% rownames_to_column()
 write_csv(cor_mat, here("output", "cor_mat.csv"), )
@@ -316,7 +339,7 @@ dat1reg <- dat1 %>%
   mutate(PC1 = res$ind$coord[, 1] %>% scale()) %>%
   scale() %>%
   as.data.frame()
-lm(depth__m ~ ., dat1reg) %>% summary()
+lm(f_gw__m3m2d ~ ., dat1reg) %>% summary()
 cor_w_HI <- cor(dat1reg)
 # scatter plot matrix
 pdf(here("output", "scatter_plot_matrix4.pdf"), width = 11, height = 8.5)
@@ -344,7 +367,7 @@ cor_out2 <- cor_w_HI %>% round(2) %>% #select(-contains("Intercept"))
 # partial least squares (need to load package, namespace reference not enough)
 library(pls)
 
-pls.model <- plsr(depth__m ~ ., data = dat1, validation = "CV")
+pls.model <- plsr(f_gw__m3m2d ~ ., data = dat1, validation = "CV")
 
 # Find the number of dimensions with the lowest cross validation error
 cv <- RMSEP(pls.model)
@@ -357,10 +380,10 @@ selectNcomp(pls.model, method = "randomization", plot = TRUE)
 temp <- crossval(pls.model, segments = 10)
 
 # Rerun the model
-pls.model <- plsr(depth__m ~ ., data = dat1 %>% select(-c()), ncomp = best.dims)
-pls.model <- plsr(depth__m ~ ., data = dat1 %>% select(-c()), ncomp = best.dims, validation = "CV", jackknife = TRUE)
+pls.model <- plsr(f_gw__m3m2d ~ ., data = dat1 %>% select(-c()), ncomp = best.dims)
+pls.model <- plsr(f_gw__m3m2d ~ ., data = dat1 %>% select(-c()), ncomp = best.dims, validation = "CV", jackknife = TRUE)
 temp <- coefplot(pls.model, se.whiskers = TRUE, labels = "names")
-pls.model <- plsr(depth__m ~ ., data = dat1 %>% select(-c()), ncomp = 4)
+pls.model <- plsr(f_gw__m3m2d ~ ., data = dat1 %>% select(-c()), ncomp = 4)
 
 pls.model$validation
 pls.model %>% broom::tidy()
@@ -392,7 +415,7 @@ library(caret)
 
 # Split the data into training and test set
 set.seed(123)
-training.samples <- dat1$depth__m %>%
+training.samples <- dat1$f_gw__m3m2d %>%
   createDataPartition(p = 0.8, list = FALSE)
 train.data  <- dat1[training.samples, ]
 test.data <- dat1[-training.samples, ]
@@ -401,9 +424,9 @@ test.data <- dat1[-training.samples, ]
 library(glmnet)
 
 # Predictor variables
-x <- model.matrix(depth__m ~., train.data)[,-1]
+x <- model.matrix(f_gw__m3m2d ~., train.data)[,-1]
 # Outcome variable
-y <- train.data$depth__m
+y <- train.data$f_gw__m3m2d
 
 # Ridge regression
 # Find the best lambda using cross-validation
@@ -433,7 +456,7 @@ coef(model_LASSO)
 summary(model_LASSO)
 coef_table <- left_join(broom::tidy(model_RR) %>% select(term, estimate), broom::tidy(model_LASSO) %>% select(term, estimate), by = "term", suffix = c("RIDGE", "LASSO")) %>% 
   left_join(bind_cols(coef(pls.model) %>% rownames(), coef(pls.model) %>% as_tibble()), by = c("term" = "...1")) %>% 
-  rename("estimatePLS" = "depth__m.11 comps") %>% 
+  rename("estimatePLS" = "f_gw__m3m2d.11 comps") %>% 
   left_join(broom::tidy(training_best)) %>% 
   rename("estimateBEST" = "estimate")
 
@@ -487,7 +510,7 @@ coef_table %>% mutate(estimateRIDGE = estimateRIDGE / coef_sums[1],
     ts_long() %>%
     ts_tsibble() %>% 
     filter(
-      id == "depth__m",
+      id == "f_gw__m3m2d",
     )
   
   fit <- model(dat_harm,
