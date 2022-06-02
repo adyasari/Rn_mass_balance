@@ -1,0 +1,35 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Rn mass balance
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Dini
+    family-names: Adyasari
+    email: dadyasari@ua.edu
+    affiliation: University of Alabama
+    orcid: 'https://orcid.org/0000-0002-3114-4053'
+  - given-names: Natasha
+    family-names: Dimova
+    email: ntdimova@ua.edu
+    affiliation: University of Alabama
+    orcid: 'https://orcid.org/0000-0002-8993-586X'
+  - given-names: Henrietta
+    family-names: Dulai
+    email: hdulaiov@hawaii.edu
+    affiliation: University of Hawaii
+    orcid: 'https://orcid.org/0000-0001-5970-1483'
+  - given-names: Tristan
+    family-names: McKenzie
+    email: tristan.mckenzie@gu.se
+    affiliation: University of Gothenburg
+    orcid: 'https://orcid.org/0000-0003-4656-439X'
+  - given-names: Peter
+    family-names: Fuleky
+    email: fuleky@hawaii.edu
+    affiliation: University of Hawaii
+    orcid: 'https://orcid.org/0000-0002-4094-2823'
