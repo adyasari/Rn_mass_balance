@@ -370,12 +370,14 @@ pre code {
 <p>Click on the green <code>Code</code> button on GitHub.com to clone,
 fork or download the repository. Use the
 <code>Rn_mass_balance.Rproj</code> file in the local project folder to
-launch the project. <strong>Verify in the top right corner of
+launch the project in <code>RStudio</code> (you need to have
+<code>R</code> and <code>RStudio</code> already installed on your
+computer). <strong>Verify in the top right corner of
 <code>RStudio</code> that you are working within the project.</strong>
-When launched the first time, the <a href="https://rstudio.github.io/renv/articles/collaborating.html" title="collaborating with renv"><code>renv</code> package maneger</a>
+When the project is launched the first time, the <a href="https://rstudio.github.io/renv/articles/collaborating.html" title="collaborating with renv"><code>renv</code> package maneger</a>
 should automatically bootstrap itself, downloading and installing the
-appropriate version of <code>renv</code> into the project library. After
-this has completed, use <code>renv::restore()</code> to restore the
+appropriate version of <code>renv</code> into the project library. After
+this has completed, use <code>renv::restore()</code> to restore the
 project library locally on your machine. The folder structure is the
 following:</p>
 <ul>
@@ -385,18 +387,25 @@ following:</p>
 <li><code>renv</code> - contains packages used in the project (should
 not be edited by a user)</li>
 </ul>
-<p>This code analyses a coastal radon mass balance from coastal radon
-time series measurements - at least 2 such measurements of the following
-variables are required: radon in water, radon in air, radon in
-groundwater, water temperature and salinity, water depth, and wind
-speed. The code is freely available to download and use. The use of code
-assumes that a reference of the source will be included in resulting
-work (paper, report, presentation). Cite as XXXXX The authors made their
-best efforts but do not guarantee successful application of the code on
-all platforms and all data formats. The structure of the
+<p>The code in the <code>analysis.R</code> script analyzes coastal radon
+mass balance from coastal radon time series measurements - at least 2
+such measurements of the following variables are required: radon in
+water, radon in air, radon in groundwater, water temperature and
+salinity, water depth, and wind speed. The code is freely available to
+download and use. The use of the code assumes that a reference of the
+source will be included in resulting work (paper, report, presentation).
+APA and BibTeX citation formats are provided in the right hand column of
+the GitHub page. The authors made their best efforts but do not
+guarantee successful application of the code on all platforms and all
+data formats. The <code>setup.R</code> and <code>util_funs.R</code>
+scripts are not intended to be edited by the user. The structure of the
 <code>csv</code> input file is described below.</p>
-<p>Input file format – <code>csv.</code> The <code>csv</code> input file
-needs to have the following headings:</p>
+<p>Input file format – <code>csv</code>. The file name is specified near
+the top of the <code>analysis.R</code> script, for example:</p>
+<pre><code># input file name
+csv_file_in &lt;- &quot;sgd_ts_data_RADAquaMixDif.csv&quot;</code></pre>
+<p>The <code>csv</code> input file needs to have the following
+headings:</p>
 <ul>
 <li><p>Time and date – acceptable formats:
 <code>yyyy/mm/dd hh:mm:ss</code>, <code>mm/dd/yyy hh:mm</code>,
