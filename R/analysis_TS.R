@@ -266,8 +266,9 @@ lines(dat_rec$C1)
 dat_est <- dat_tbl %>% 
   select(where(~ !(is.na(.x) %>% all()))) %>% 
   select(where(~ (sum(.x - lag(.x), na.rm = TRUE) != 0))) %>% 
-  filter(time >= start_2) %>% 
-  select(wind__ms, depth__m, winddir, waveht__m, f_gw__m3m2d) %>% 
+  # filter(time >= start_2) %>% 
+  # select(wind__ms, depth__m, winddir, waveht__m, f_gw__m3m2d) %>% 
+  select(-1) %>%
   mutate(across(-1, ~ scale(.x) %>% extract(,1)))
 
 # best subset regression
@@ -312,8 +313,35 @@ cor_mat <- cor_mat %>% rownames_to_column()
 write_csv(cor_mat, here("output", "cor_mat.csv"), )
 
 # scatter plot matrix
-pdf(here("output", "scatter_plot_matrix.pdf"), width = 11*3, height = 8.5*3)
-car::scatterplotMatrix(dat_est, smooth = FALSE)
+dat_est %>% names()
+dat_scat_1 <- dat_est %>% filter(!is.na(Rn_wat__Bqm3)) %>% select(f_atm__Bqm2hr,kw_air, Rn_wat__Bqm3, temp_wat__C, sal_wat, wind__ms, depth__m, waveht__m, f_Rn_gross__Bqm2hr)
+# pdf(here("output", "scatter_plot_matrix.pdf"), width = 11*3, height = 8.5*3)
+pdf(here("output", "scatter_plot_matrix.pdf"), width = 11, height = 8.5)
+car::scatterplotMatrix(dat_scat_1, smooth = FALSE)
+dev.off()
+
+dat_scat_2 <- dat_est %>% filter(!is.na(Rn_wat__Bqm3)) %>% select(f_Rn_flood__Bqm2hr, Rn_wat__Bqm3, temp_wat__C, sal_wat, wind__ms, depth__m, waveht__m, f_Rn_gross__Bqm2hr)
+# pdf(here("output", "scatter_plot_matrix.pdf"), width = 11*3, height = 8.5*3)
+pdf(here("output", "scatter_plot_matrix.pdf"), width = 11, height = 8.5)
+car::scatterplotMatrix(dat_scat_2, smooth = FALSE)
+dev.off()
+
+dat_scat_3 <- dat_est %>% filter(!is.na(Rn_wat__Bqm3)) %>% select(f_Rn_ebb__Bqm2hr, Rn_wat__Bqm3, temp_wat__C, sal_wat, wind__ms, depth__m, waveht__m, f_Rn_gross__Bqm2hr)
+# pdf(here("output", "scatter_plot_matrix.pdf"), width = 11*3, height = 8.5*3)
+pdf(here("output", "scatter_plot_matrix.pdf"), width = 11, height = 8.5)
+car::scatterplotMatrix(dat_scat_3, smooth = FALSE)
+dev.off()
+
+dat_scat_4 <- dat_est %>% filter(!is.na(Rn_wat__Bqm3)) %>% select(f_mix__Bqm2hr, Rn_wat__Bqm3, temp_wat__C, sal_wat, wind__ms, winddir, depth__m, waveht__m, f_Rn_gross__Bqm2hr)
+# pdf(here("output", "scatter_plot_matrix.pdf"), width = 11*3, height = 8.5*3)
+pdf(here("output", "scatter_plot_matrix.pdf"), width = 11, height = 8.5)
+car::scatterplotMatrix(dat_scat_4, smooth = FALSE)
+dev.off()
+
+dat_scat_5 <- dat_est %>% filter(!is.na(Rn_wat__Bqm3)) %>% select(f_Rn_total__Bqm2hr, f_Rn_gross__Bqm2hr, f_atm__Bqm2hr, f_Rn_flood__Bqm2hr, f_Rn_ebb__Bqm2hr, f_mix__Bqm2hr)
+# pdf(here("output", "scatter_plot_matrix.pdf"), width = 11*3, height = 8.5*3)
+pdf(here("output", "scatter_plot_matrix.pdf"), width = 11, height = 8.5)
+car::scatterplotMatrix(dat_scat_5, smooth = FALSE)
 dev.off()
 
 library("PerformanceAnalytics")
@@ -324,14 +352,15 @@ chart.Correlation(my_data, histogram=TRUE, pch=19)
 #  shrinkage/penalized methods ----
 # *************************
 
-dat1 <- dat_est %>% drop_na() %>% select(-time) %>% scale() %>% as_tibble()
+# dat1 <- dat_est %>% drop_na() %>% select(-time) %>% scale() %>% as_tibble()
+dat1 <- dat_est %>% drop_na() %>% scale() %>% as_tibble()
 
 # obtain automatic report about the PCA
 # library(FactoMineR)
 # library(FactoInvestigate)
 
 res <- FactoMineR::PCA(dat1, graph=FALSE, scale.unit = TRUE, ncp = 5)
-FactoInvestigate::Investigate(res, file = here("output", "FactoInvestigateState.Rmd"), document = c("pdf_document"), keepRmd = TRUE)
+FactoInvestigate::Investigate(res, file = here("output", "FactoInvestigateState.Rmd"), document = c("html_document"), keepRmd = TRUE)
 dimdesc(res, axes = 1:4, proba = 0.05)
 corr_table <-  dimdesc(res, axes = 1:1)$Dim.1$quanti %>% as.data.frame() %>% rownames_to_column() %>% as_tibble %>% rename_with(~c('Variable Name', 'Correlation', 'p-value'))
 res$var
@@ -347,7 +376,7 @@ lm(f_gw__m3m2d ~ ., dat1reg) %>% summary()
 cor_w_HI <- cor(dat1reg)
 # scatter plot matrix
 pdf(here("output", "scatter_plot_matrix4.pdf"), width = 11, height = 8.5)
-scatterplotMatrix(dat1reg, smooth = FALSE, id = TRUE)
+car::scatterplotMatrix(dat1reg, smooth = FALSE, id = TRUE)
 dev.off()
 
 cor_out1 <- cor(dat1reg) %>% round(2) %>% #select(-contains("Intercept"))
@@ -371,7 +400,7 @@ cor_out2 <- cor_w_HI %>% round(2) %>% #select(-contains("Intercept"))
 # partial least squares (need to load package, namespace reference not enough)
 library(pls)
 
-pls.model <- plsr(f_gw__m3m2d ~ ., data = dat1, validation = "CV")
+pls.model <- plsr(f_atm__Bqm2hr ~ ., data = dat_scat_1, validation = "CV")
 
 # Find the number of dimensions with the lowest cross validation error
 cv <- RMSEP(pls.model)
@@ -384,10 +413,10 @@ selectNcomp(pls.model, method = "randomization", plot = TRUE)
 temp <- crossval(pls.model, segments = 10)
 
 # Rerun the model
-pls.model <- plsr(f_gw__m3m2d ~ ., data = dat1 %>% select(-c()), ncomp = best.dims)
-pls.model <- plsr(f_gw__m3m2d ~ ., data = dat1 %>% select(-c()), ncomp = best.dims, validation = "CV", jackknife = TRUE)
+pls.model <- plsr(f_atm__Bqm2hr ~ ., data = dat_scat_1 %>% select(-c()), ncomp = best.dims)
+pls.model <- plsr(f_atm__Bqm2hr ~ ., data = dat_scat_1 %>% select(-c()), ncomp = best.dims, validation = "CV", jackknife = TRUE)
 temp <- coefplot(pls.model, se.whiskers = TRUE, labels = "names")
-pls.model <- plsr(f_gw__m3m2d ~ ., data = dat1 %>% select(-c()), ncomp = 4)
+pls.model <- plsr(f_atm__Bqm2hr ~ ., data = dat_scat_1 %>% select(-c()), ncomp = 4)
 
 pls.model$validation
 pls.model %>% broom::tidy()
