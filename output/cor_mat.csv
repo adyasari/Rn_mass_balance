@@ -1,6 +1,0 @@
-rowname,wind__ms,depth__m,winddir,waveht__m,f_gw__m3m2d
-wind__ms,1,-0.04,-0.35,-0.05,0.01
-depth__m,-0.04,1,0,-0.05,-0.01
-winddir,-0.35,0,1,0.02,-0
-waveht__m,-0.05,-0.05,0.02,1,-0
-f_gw__m3m2d,0.01,-0.01,-0,-0,1
