@@ -316,6 +316,10 @@ pdf(here("output", "scatter_plot_matrix.pdf"), width = 11*3, height = 8.5*3)
 car::scatterplotMatrix(dat_est, smooth = FALSE)
 dev.off()
 
+library("PerformanceAnalytics")
+my_data <- mtcars[, c(1,3,4,5,6,7)]
+chart.Correlation(my_data, histogram=TRUE, pch=19)
+
 # *************************
 #  shrinkage/penalized methods ----
 # *************************

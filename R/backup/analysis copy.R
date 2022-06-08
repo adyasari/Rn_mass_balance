@@ -61,46 +61,46 @@ ts_dat$kw_air <-
   (-0.2631 + 0.1673 * (ts_dat$temp_wat__K / 100) + (-0.0273 * (ts_dat$temp_wat__K / 100)^2)) * 
   ts_dat$temp_wat__K / 273.15
 
-if(timser_in$Rn_exch__Bqm3) isnumber <- Rn_wat__Bqm3 = timser_in$Rn_exch__Bqm3 * kw/air
-otherwise Rn_wat__Bqm3 = timser_in$Rn_wat__Bqm3
-
-If timser_in$wind__ms > 3.6
-f_atm__Bqm2hr =
-  ((0.45*(timser_in$wind__ms^1.6)*((0.0086/(10^(-((980/temp_wat__K+1.59)))/600)^-(1/2)))/100)/60)*
-  (Rn_wat__Bqm3=- kw/air* timser_in$Rn_air__Bqm3) * 60
-
-If timser_in$wind__ms >1.5 and <= 3.6
-f_atm__Bqm2hr =
-  ((0.45*(timser_in$wind__ms^1.6)*((0.0086/(10^(-((980/temp_wat__K+1.59)))/600)^-(2/3)))/100)/60)*
-  (Rn_wat__Bqm3=- kw/air* timser_in$Rn_air__Bqm3) * 60
-
-If timser_in$wind__ms <= 1.5
-f_atm__Bqm2hr =
-  ((0.45*(1.5^1.6)*((0.0086/(10^(-((980/temp_wat__K+1.59)))/600)^-(2/3)))/100)/60)*
-  (Rn_wat__Bqm3=- kw/air* timser_in$Rn_air__Bqm3) * 60
-
-
-f_dif__Bqm2hr = (495 * single_in$Ra226_sed__Bqg * 60 + 18.2) / 24
-
-exRn_wat__Bqm3 = Rn_wat__Bqm3 - single_in$Ra226_wat__Bqm3
-
-exRn_wat_inv__Bqm2 = exRn_wat__Bqm3 * timser_in$depth__m
-
-f_Rn_gross__Bqm2hr = (ts_lag(exRn_wat_inv__Bqm2, 1) - exRn_wat_inv__Bqm2) * 60/meas_t__min
-
-if ts_lag(timser_in$depth__m, 1) - timser_in$depth__m < 0
-f_Rn_flood__Bqm2hr = ((ts_lag(timser_in$depth__m, 1) - timser_in$depth__m) * single_in$Rn_offshore__Bqm3) * 60/meas_t__min 
-
-if ts_lag(timser_in$depth__m, 1) - timser_in$depth__m > 0
-f_Rn_ebb__Bqm2hr = ((ts_lag(timser_in$depth__m, 1) - timser_in$depth__m) * exRn_wat__Bqm3) * 60/meas_t__min
-
-f_Rn_net__Bqm2hr = f_Rn_gross__Bqm2hr + f_atm__Bqm2hr + f_Rn_ebb__Bqm2hr + f_Rn_flood__Bqm2hr - f_dif__Bqm2hr + f_mix_exp__Bqm2hr
-
-if f_Rn_net__Bqm2hr <0 then f_mix__Bqm2hr = - f_Rn_net__Bqm2hr otherwise f_mix__Bqm2hr = 0
-
-f_Rn_total__Bqm2hr = f_Rn_net__Bqm2hr + f_mix__Bqm2hr
-
-f_gw__m3m2d = (f_Rn_total__Bqm2hr / single_in$Rn_gw__Bqm3) * 24
-
-
-
+# if(timser_in$Rn_exch__Bqm3) isnumber <- Rn_wat__Bqm3 = timser_in$Rn_exch__Bqm3 * kw/air
+# otherwise Rn_wat__Bqm3 = timser_in$Rn_wat__Bqm3
+# 
+# If timser_in$wind__ms > 3.6
+# f_atm__Bqm2hr =
+#   ((0.45*(timser_in$wind__ms^1.6)*((0.0086/(10^(-((980/temp_wat__K+1.59)))/600)^-(1/2)))/100)/60)*
+#   (Rn_wat__Bqm3=- kw/air* timser_in$Rn_air__Bqm3) * 60
+# 
+# If timser_in$wind__ms >1.5 and <= 3.6
+# f_atm__Bqm2hr =
+#   ((0.45*(timser_in$wind__ms^1.6)*((0.0086/(10^(-((980/temp_wat__K+1.59)))/600)^-(2/3)))/100)/60)*
+#   (Rn_wat__Bqm3=- kw/air* timser_in$Rn_air__Bqm3) * 60
+# 
+# If timser_in$wind__ms <= 1.5
+# f_atm__Bqm2hr =
+#   ((0.45*(1.5^1.6)*((0.0086/(10^(-((980/temp_wat__K+1.59)))/600)^-(2/3)))/100)/60)*
+#   (Rn_wat__Bqm3=- kw/air* timser_in$Rn_air__Bqm3) * 60
+# 
+# 
+# f_dif__Bqm2hr = (495 * single_in$Ra226_sed__Bqg * 60 + 18.2) / 24
+# 
+# exRn_wat__Bqm3 = Rn_wat__Bqm3 - single_in$Ra226_wat__Bqm3
+# 
+# exRn_wat_inv__Bqm2 = exRn_wat__Bqm3 * timser_in$depth__m
+# 
+# f_Rn_gross__Bqm2hr = (ts_lag(exRn_wat_inv__Bqm2, 1) - exRn_wat_inv__Bqm2) * 60/meas_t__min
+# 
+# if ts_lag(timser_in$depth__m, 1) - timser_in$depth__m < 0
+# f_Rn_flood__Bqm2hr = ((ts_lag(timser_in$depth__m, 1) - timser_in$depth__m) * single_in$Rn_offshore__Bqm3) * 60/meas_t__min 
+# 
+# if ts_lag(timser_in$depth__m, 1) - timser_in$depth__m > 0
+# f_Rn_ebb__Bqm2hr = ((ts_lag(timser_in$depth__m, 1) - timser_in$depth__m) * exRn_wat__Bqm3) * 60/meas_t__min
+# 
+# f_Rn_net__Bqm2hr = f_Rn_gross__Bqm2hr + f_atm__Bqm2hr + f_Rn_ebb__Bqm2hr + f_Rn_flood__Bqm2hr - f_dif__Bqm2hr + f_mix_exp__Bqm2hr
+# 
+# if f_Rn_net__Bqm2hr <0 then f_mix__Bqm2hr = - f_Rn_net__Bqm2hr otherwise f_mix__Bqm2hr = 0
+# 
+# f_Rn_total__Bqm2hr = f_Rn_net__Bqm2hr + f_mix__Bqm2hr
+# 
+# f_gw__m3m2d = (f_Rn_total__Bqm2hr / single_in$Rn_gw__Bqm3) * 24
+# 
+# 
+# 
