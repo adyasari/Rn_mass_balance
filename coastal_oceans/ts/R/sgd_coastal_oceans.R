@@ -48,7 +48,7 @@ dat_tbl <- in_tbl %>%
     # all other time series parameters provided by the user should be averaged to this interval
     meas_t__min = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60,
     
-    # EXPLAIN
+    # change in water depth between two time stamps
     diff_owl__m = depth__m - lag(depth__m),
 
     # if radon mixing losses are determined via an independent method (current measurements, residence time estimates)
@@ -59,6 +59,7 @@ dat_tbl <- in_tbl %>%
     } else {
       0
     },
+    
     # water temperature converted from degrees Celsius to Kelvin
     temp_wat__K = temp_wat__C + 273.15,
 
@@ -109,7 +110,7 @@ dat_tbl <- in_tbl %>%
       0
     },
  
-    # excess Rn in water is calculated by sutracting dissolved 226Ra in water
+    # excess Rn in water is calculated by subtracting dissolved 226Ra in water
     ex_Rn_wat__Bqm3 = Rn_wat__Bqm3 - Ra226_wat__Bqm3,
 
     # excess Rn inventory is excess Rn activity times water depth or depth of mixed layer/groundwater plume thickness
@@ -157,6 +158,8 @@ dat_tbl <- in_tbl %>%
     f_gw__m3m2d = (f_Rn_total__Bqm2hr / Rn_gw__Bqm3) * 24
     
   ) %>% 
+
+  # drop columns with no values (keep those with at least one value)
   select(where(~(!(.x %>% is.na())) %>% any()))
 
 # results saved in a csv file
