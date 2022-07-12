@@ -204,11 +204,12 @@ dat_tbl %>%
   
 # proportional area plot of flux components
 plot_out <- dat_tbl %>% 
-  select(time, f_Rn_atm__Bqm2hr, f_Rn_gross__Bqm2hr, f_Rn_flood__Bqm2hr, f_Rn_ebb__Bqm2hr, f_Rn_mix__Bqm2hr) %>% 
+  select(time, f_Rn_flood__Bqm2hr, f_Rn_atm__Bqm2hr, f_Rn_ebb__Bqm2hr, f_Rn_mix__Bqm2hr, f_Rn_gross__Bqm2hr) %>% 
   filter(time >= start_2) %>% 
-  filter(time >= ymd("2015-04-01") & time < ymd("2015-05-01")) %>% 
+  filter(time >= ymd("2015-04-05") & time < ymd("2016-04-08")) %>% 
   drop_na() %>% 
-  ts_long() %>% 
+  ts_long() %>%
+  mutate(id = factor(id, levels = c("f_Rn_flood__Bqm2hr", "f_Rn_atm__Bqm2hr", "f_Rn_ebb__Bqm2hr", "f_Rn_mix__Bqm2hr", "f_Rn_gross__Bqm2hr"))) %>%
   ts_regular() %>% 
   mutate(value = abs(value)) %>% 
   group_by(time) %>% 
@@ -217,23 +218,24 @@ plot_out <- dat_tbl %>%
   ggplot(aes(x = time, y = perc, fill = id)) + 
   geom_area(alpha = 1) + 
   scale_x_datetime("Time") + 
-  scale_y_continuous("Components") + 
+  scale_y_continuous("Rn Flux Components") + 
   theme_classic()
 ggsave(here("output", "stack1.pdf"), plot_out)
 
 # stacked area plot of flux components
 plot_out <- dat_tbl %>% 
-  select(time, f_Rn_atm__Bqm2hr, f_Rn_gross__Bqm2hr, f_Rn_flood__Bqm2hr, f_Rn_ebb__Bqm2hr, f_Rn_mix__Bqm2hr) %>% 
+  select(time, f_Rn_flood__Bqm2hr, f_Rn_atm__Bqm2hr, f_Rn_ebb__Bqm2hr, f_Rn_mix__Bqm2hr, f_Rn_gross__Bqm2hr) %>% 
   filter(time >= start_2) %>% 
-  filter(time >= ymd("2015-04-01") & time < ymd("2015-04-08")) %>% 
+  filter(time >= ymd("2015-04-05") & time < ymd("2015-04-08")) %>% 
   drop_na() %>% 
   ts_long() %>% 
+  mutate(id = factor(id, levels = c("f_Rn_flood__Bqm2hr", "f_Rn_atm__Bqm2hr", "f_Rn_ebb__Bqm2hr", "f_Rn_mix__Bqm2hr", "f_Rn_gross__Bqm2hr"))) %>%
   ts_regular() %>% 
   mutate(value = abs(value)) %>% 
   ggplot(aes(x = time, y = value, fill = id)) + 
   geom_area(alpha = 1) + 
   scale_x_datetime("Time") + 
-  scale_y_continuous("Components", limits = c(0, 1000)) + 
+  scale_y_continuous("Rn Flux Components", limits = c(0, 1000)) + 
   theme_classic()
 ggsave(here("output", "stack2.pdf"), plot_out)
 
