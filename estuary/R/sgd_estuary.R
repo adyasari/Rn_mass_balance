@@ -95,22 +95,10 @@ dat_tbl <- in_tbl %>%
             (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60
       ),
 
-    # The amount of radon diffusing from the bottom sediments can be estimated from an experimentally 
-    # defined relationship between 226Ra content of sediments and the corresponding measured 222Rn flux 
-    # by diffusion (Burnett et al., 2003).  That empirical relationship is based on experimental data 
-    # from several different environments (both marine and fresh):Flux (dpm m-2 day-1) =  495 x 226Ra conc.(dpm g-1) + 18.2 
-    # this can be written as f_dif__Bqm2hr = (495 x Ra226_sed__Bqg * 60 + 18.2) / 24
-    # the condition checks if a Ra226_sed__Bqg column exists and if it is non-empty
-    f_dif__Bqm2hr = if (!(Ra226_sed__Bqg %>% is.null()) & (!(Ra226_sed__Bqg %>% is.na())) %>% any()) {
-      if_else(is.na(Ra226_sed__Bqg), 0, (495 * Ra226_sed__Bqg * 60 + 18.2) / 24)
-    } else {
-      0
-    },
-    
     # inventory contributed by Rn diffusion from sediments
     inv_dif__Bqm2 = f_dif__Bqm2hr * (1 - exp(-lambda * meas_t__min / 60)) / lambda,
     
-    # Rn inventory contributed by decay over measurement time
+    # Rn inventory correctred for decay over measurement time
     inv_dec__Bqm2 = Rn_wat__Bqm3 * exp(-lambda * meas_t__min / 60) * depth__m, 
     
     # Rn inventory contributed by atmospheric evasion over measurement time

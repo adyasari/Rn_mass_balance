@@ -15,7 +15,7 @@
 source(here::here("R", "setup.R"))
 
 # study type (determines folder)
-study_folder <- "coastal_oceans/ts"
+study_folder <- "coastal/ts"
 
 # input file name
 # csv_file_in <- "sgd_ts_data_RADAquaMixDif.csv"
@@ -28,7 +28,7 @@ csv_file_in <- "Kiholo_seldata.csv"
 # load the time series
 in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
   # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
-  mutate(across(.cols = 1, .fns = ~ parse_date_time(., c("ymdHMS", "mdyHM", "mdyHMS")))) %>%
+  mutate(across(.cols = 1, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "mdyHM", "mdyHMS")))) %>%
   mutate(across(.cols = -1, .fns = as.numeric))
 
 # *************************
@@ -103,18 +103,6 @@ dat_tbl <- in_tbl %>%
             (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60
       ),
 
-    # The amount of radon diffusing from the bottom sediments can be estimated from an experimentally 
-    # defined relationship between 226Ra content of sediments and the corresponding measured 222Rn flux 
-    # by diffusion (Burnett et al., 2003).  That empirical relationship is based on experimental data 
-    # from several different environments (both marine and fresh):Flux (dpm m-2 day-1) =  495 x 226Ra conc.(dpm g-1) + 18.2 
-    # this can be written as f_dif__Bqm2hr = (495 x Ra226_sed__Bqg * 60 + 18.2) / 24
-    # the condition checks if a Ra226_sed__Bqg column exists and if it is non-empty
-    f_dif__Bqm2hr = if (!(Ra226_sed__Bqg %>% is.null()) & (!(Ra226_sed__Bqg %>% is.na())) %>% any()) {
-      if_else(is.na(Ra226_sed__Bqg), 0, (495 * Ra226_sed__Bqg * 60 + 18.2) / 24)
-    } else {
-      0
-    },
- 
     # excess Rn in water is calculated by subtracting dissolved 226Ra in water
     ex_Rn_wat__Bqm3 = Rn_wat__Bqm3 - Ra226_wat__Bqm3,
 

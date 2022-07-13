@@ -30,17 +30,11 @@ here::i_am("R/setup.R")
 library("here")
 library("conflicted")
 library("tidyverse")
-library("magrittr")
-library("lubridate")
-library("tsbox")
 
 # detect conflicts across packages and assign preferences
 conflict_scout()
 conflict_prefer("filter", "dplyr") # dplyr v stats
-conflict_prefer("first", "dplyr") # dplyr v xts
 conflict_prefer("lag", "dplyr") # dplyr v stats
-conflict_prefer("last", "dplyr") # dplyr v xts
-conflict_prefer("extract", "magrittr") # magrittr vs tidyr
 
 # top level project directory
 here()
@@ -48,12 +42,6 @@ here()
 # store sensitive info in project specific .Renviron file (must end with \n)
 # Sys.getenv("api_username")
 # Sys.getenv("api_key")
-
-# # define project-wide constants
-# # bank start
-# bnk_start <- ymd("1900-01-01")
-# # bank end
-# bnk_end <- ymd("2060-12-31")
 
 # load user defined utility functions
 source(here("R", "util_funs.R"))
