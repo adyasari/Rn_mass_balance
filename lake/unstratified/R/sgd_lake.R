@@ -18,7 +18,7 @@ source(here::here("R", "setup.R"))
 study_folder <- "lake/unstratified"
 
 # input file name
-csv_file_in <- "sgd_lake_data_Natasha.csv"
+csv_file_in <- "sgd_lake_unstratified_data.csv"
 
 # decay constant of Rn in hours
 lambda <- log(2)/(3.84 * 24)

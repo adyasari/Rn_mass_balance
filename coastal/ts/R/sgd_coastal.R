@@ -19,7 +19,7 @@ study_folder <- "coastal/ts"
 
 # input file name
 # csv_file_in <- "sgd_ts_data_RADAquaMixDif.csv"
-csv_file_in <- "Kiholo_seldata.csv"
+csv_file_in <- "sgd_coastal_ts_data.csv"
 
 # *************************
 #  load data ----
