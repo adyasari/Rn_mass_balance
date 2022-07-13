@@ -39,7 +39,9 @@ in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
 dat_tbl <- in_tbl %>%
   mutate(
     
-    # when a single value is missing interpolate linearly
+    # the loaded data should have a fixed periodicity
+    # interpolate linearly when a single value is missing from the time series
+    # (e.g. due to issues with the measuring device)
     Rn_wat__Bqm3 = if_else(is.na(Rn_wat__Bqm3), (lag(Rn_wat__Bqm3) + lead(Rn_wat__Bqm3))/2, Rn_wat__Bqm3),
     temp_wat__C = if_else(is.na(temp_wat__C), (lag(temp_wat__C) + lead(temp_wat__C))/2, temp_wat__C),
     sal_wat = if_else(is.na(sal_wat), (lag(sal_wat) + lead(sal_wat))/2, sal_wat),
@@ -54,6 +56,7 @@ dat_tbl <- in_tbl %>%
     # if radon mixing losses are determined via an independent method (current measurements, residence time estimates)
     # then f_mix_exp__Bqm2hr should be provided in the spreadsheet
     # otherwise, mixing losses will be estimated from the Rn mass balance
+    # the condition checks if a f_mix_exp__Bqm2hr column exists and if it is non-empty
     f_mix_exp__Bqm2hr = if (!(f_mix_exp__Bqm2hr %>% is.null()) & (!(f_mix_exp__Bqm2hr %>% is.na())) %>% any()) {
       f_mix_exp__Bqm2hr %>% if_else(is.na(.), 0, .)
     } else {
@@ -73,6 +76,7 @@ dat_tbl <- in_tbl %>%
     # if Rad-Aqua was used to collect radon data and radon in the exchanger (therfore in air) is provided 
     # it is converted to Rn in water in this step;
     # otherwise, the provided radon in water is used for further calculations
+    # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
     Rn_wat__Bqm3 = if (!(Rn_exch__Bqm3 %>% is.null()) & (!(Rn_exch__Bqm3 %>% is.na())) %>% any()) {
       Rn_exch__Bqm3 * kw_air
     } else {
@@ -104,6 +108,7 @@ dat_tbl <- in_tbl %>%
     # by diffusion (Burnett et al., 2003).  That empirical relationship is based on experimental data 
     # from several different environments (both marine and fresh):Flux (dpm m-2 day-1) =  495 x 226Ra conc.(dpm g-1) + 18.2 
     # this can be written as f_dif__Bqm2hr = (495 x Ra226_sed__Bqg * 60 + 18.2) / 24
+    # the condition checks if a Ra226_sed__Bqg column exists and if it is non-empty
     f_dif__Bqm2hr = if (!(Ra226_sed__Bqg %>% is.null()) & (!(Ra226_sed__Bqg %>% is.na())) %>% any()) {
       if_else(is.na(Ra226_sed__Bqg), 0, (495 * Ra226_sed__Bqg * 60 + 18.2) / 24)
     } else {
