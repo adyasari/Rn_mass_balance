@@ -1,5 +1,0 @@
-﻿time,Rn_air__Bqm3,Rn_air_err__Bqm3,Rn_gw__Bqm3,Rn_gw_err__Bqm3,Ra226_wat__Bqm3,Ra226_wat_err__Bqm3,Ra226_sed__Bqg,Ra226_sed_err__Bqg,Rn_exch__Bqm3,Rn_exch_err__Bqm3,Rn_wat__Bqm3,Rn_wat_err__Bqm3,temp_wat__C,temp_wat_err__C,sal_wat,sal_wat_err,wind__ms,wind_err__ms,depth__m,depth_err__m,Rn_dif__Bqm2hr
-2013-02-15 17:22,0.37,,3833.333333,,0,,,,911.4,,,,15,,0.1,,0,,0.6,,2
-2013-02-15 17:32,0.37,,3833.333333,,0,,,,803.2,,,,15,,0.1,,0,,0.6,,2
-2013-02-15 17:42,0.37,,3833.333333,,0,,,,803.9,,,,15,,0.1,,0,,0.6,,2
-2013-02-15 17:52,0.37,,3833.333333,,0,,,,882.4,,,,15,,0.1,,0,,0.6,,2
