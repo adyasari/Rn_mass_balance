@@ -139,7 +139,7 @@ Rn_ss_calc <- function(ini_Rn_flux__Bqm2hr){
       inv_net__Bqm2 = inv_dec__Bqm2 + inv_sgd__Bqm2 - inv_eva__Bqm2 + inv_dif__Bqm2,
       
       # modeled Rn concentration
-      mod_Rn_wat__Bqm3 = inv_net__Bqm2 * depth__m,
+      mod_Rn_wat__Bqm3 = inv_net__Bqm2 / depth__m,
       
       # difference between actual and modeled Rn concentration
       diff_Rn_wat__Bqm3 = Rn_wat__Bqm3 - mod_Rn_wat__Bqm3,
@@ -186,14 +186,14 @@ dat_tbl_cont <- dat_tbl %>%
     inv_net__Bqm2 = inv_dec__Bqm2 + inv_sgd__Bqm2 - inv_eva__Bqm2 + inv_dif__Bqm2,
     
     # modeled Rn concentration
-    mod_Rn_wat__Bqm3 = inv_net__Bqm2 * depth__m,
+    mod_Rn_wat__Bqm3 = inv_net__Bqm2 / depth__m,
     
     # difference between actual and modeled Rn concentration
     diff_Rn_wat__Bqm3 = Rn_wat__Bqm3 - mod_Rn_wat__Bqm3,
     
     # ground water advection into lake in m/hr which is the same as m3/m2/hr
     drip_rate__mhr = Rn_flux__Bqm2hr / Rn_gw__Bqm3,
-    
+
   ) %>% 
   
   # drop columns with no values (keep those with at least one value)
