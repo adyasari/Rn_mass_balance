@@ -1,5 +1,5 @@
 # *************************
-# Rn mass balance calculation for time series coastal radon budget
+# Rn mass balance calculation for time series lake radon budget
 # Author: Peter Fuleky
 # Date: 2022-05-22
 # notes:
@@ -15,10 +15,10 @@
 source(here::here("R", "setup.R"))
 
 # study type (determines folder)
-study_folder <- "coastal/ts"
+study_folder <- "estuary/ts"
 
 # input file name
-csv_file_in <- "sgd_coastal_ts_data.csv"
+csv_file_in <- "sgd_estuary_ts_data.csv"
 
 # *************************
 #  load data ----
@@ -37,18 +37,18 @@ in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
 # creates data table
 dat_tbl <- in_tbl %>%
   mutate(
-    
+
     # the loaded data should have a fixed periodicity
     # interpolate linearly when a single value is missing from the time series
     # (e.g. due to issues with the measuring device)
-    Rn_wat__Bqm3 = if_else(is.na(Rn_wat__Bqm3), (lag(Rn_wat__Bqm3) + lead(Rn_wat__Bqm3))/2, Rn_wat__Bqm3),
-    temp_wat__C = if_else(is.na(temp_wat__C), (lag(temp_wat__C) + lead(temp_wat__C))/2, temp_wat__C),
-    sal_wat = if_else(is.na(sal_wat), (lag(sal_wat) + lead(sal_wat))/2, sal_wat),
-    
-    # calculates coastal radon measurement time interval in minutes based on provided measurement times, 
+    Rn_wat__Bqm3 = if_else(is.na(Rn_wat__Bqm3), (lag(Rn_wat__Bqm3) + lead(Rn_wat__Bqm3)) / 2, Rn_wat__Bqm3),
+    temp_wat__C = if_else(is.na(temp_wat__C), (lag(temp_wat__C) + lead(temp_wat__C)) / 2, temp_wat__C),
+    sal_wat = if_else(is.na(sal_wat), (lag(sal_wat) + lead(sal_wat)) / 2, sal_wat),
+
+    # calculates coastal radon measurement time interval in minutes based on provided measurement times,
     # all other time series parameters provided by the user should be averaged to this interval
     meas_t__min = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60,
-    
+
     # change in water depth between two time stamps
     diff_owl__m = depth__m - lag(depth__m),
 
@@ -61,11 +61,11 @@ dat_tbl <- in_tbl %>%
     } else {
       0
     },
-    
+
     # water temperature converted from degrees Celsius to Kelvin
     temp_wat__K = temp_wat__C + 273.15,
 
-    # water/air partitioning coefficient kw_air based on water temperature and salinity; 
+    # water/air partitioning coefficient kw_air based on water temperature and salinity;
     # calculations and coefficients from Schubert et al. 2012
     kw_air =
       exp(-76.14 + 120.36 * (100 / temp_wat__K) + 31.26 * log(temp_wat__K / 100) + sal_wat *
@@ -88,11 +88,27 @@ dat_tbl <- in_tbl %>%
       Rn_exch__Bqm3 * kw_air
     },
     
-    # Rn losses by evasion into the atmosphere are calculated according to MacIntyre et al. (1995)
+    # Rn losses by evasion into the atmosphere are calculated either according to XX or according to MacIntyre et al. (1995)
+    # if wat_current__cms is provided in the spreadsheet, then ...
     # for wind speeds above 3.6 m/s Sc^-1/2 and for wind speeds below 3.6 m/s Sc^-2/3 is applied (Turner et al., 1996);
     # for wind speeds below 1.5 m/s k is assumed to be constant and equivalent to wind speeds of 1.5 m/s (Ocampo-torres et al., 1994)
     # note that kinematic viscosity is considered constant, one can calculate more accurate values that account for salinity and temperature
-    f_Rn_atm__Bqm2hr =
+    f_Rn_atm__Bqm2hr = if (!(wat_current__cms %>% is.null()) & (!(wat_current__cms %>% is.na())) %>% any()) {
+      case_when(
+        wind__ms > 3.6 ~
+          ((1 + 1.719 * wat_current__cms^(1 / 2) * depth__m^(-1 / 2) + 2.58 * wind__ms) *
+            ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-1 / 2)) / 100 / 60 *
+            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
+        wind__ms > 1.5 ~
+          ((1 + 1.719 * wat_current__cms^(1 / 2) * depth__m^(-1 / 2) + 2.58 * wind__ms) *
+            ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
+            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
+        TRUE ~
+          ((1 + 1.719 * wat_current__cms^(1 / 2) * depth__m^(-1 / 2) + 2.58 * 1.5) *
+            ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
+            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60
+      )
+    } else {
       case_when(
         wind__ms > 3.6 ~
           (0.45 * wind__ms^1.6 *
@@ -100,13 +116,14 @@ dat_tbl <- in_tbl %>%
             (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
         wind__ms > 1.5 ~
           (0.45 * wind__ms^1.6 *
-             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
+            ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
             (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
         TRUE ~
           (0.45 * 1.5^1.6 *
-             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
+            ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
             (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60
-      ),
+      )
+    },
 
     # excess Rn in water is calculated by subtracting dissolved 226Ra in water
     ex_Rn_wat__Bqm3 = Rn_wat__Bqm3 - Ra226_wat__Bqm3,
@@ -151,18 +168,16 @@ dat_tbl <- in_tbl %>%
     # total radon flux is the one corrected for mixing losses
     f_Rn_total__Bqm2hr = f_Rn_net__Bqm2hr + f_Rn_mix__Bqm2hr,
 
-    # groundwater discharge f_gw__m3m2d equals the total Rn flux f_Rn_total__Bqm2hr 
+    # groundwater discharge f_gw__m3m2d equals the total Rn flux f_Rn_total__Bqm2hr
     # divided by groundwater Rn activity
     f_gw__m3m2d = (f_Rn_total__Bqm2hr / Rn_gw__Bqm3) * 24
-    
-  ) %>% 
-
+  ) %>%
   # drop columns with no values (keep those with at least one value)
-  select(where(~(!(.x %>% is.na())) %>% any()))
+  select(where(~ (!(.x %>% is.na())) %>% any()))
 
 # results saved in a csv file
 write_csv(dat_tbl, here(study_folder, "output", "rn_budget.csv"), na = "")
-  
+
 # END OF RADON BUDGET CALCULATION
 
 # *************************
