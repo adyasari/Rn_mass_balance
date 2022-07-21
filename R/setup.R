@@ -30,6 +30,7 @@ here::i_am("R/setup.R")
 library("here")
 library("conflicted")
 library("tidyverse")
+library("magrittr")
 
 # detect conflicts across packages and assign preferences
 conflict_scout()

@@ -32,10 +32,12 @@ in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
   # mutate(across(.cols = 2:4, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
   # mutate(across(.cols = -(2:4), .fns = as.numeric))
 
+# names(in_tbl)
+
 # *************************
 #  calculations ----
 # *************************
-names(in_tbl)
+
 # create data table
 dat_tbl <- in_tbl %>%
   mutate(
@@ -45,140 +47,173 @@ dat_tbl <- in_tbl %>%
     time = `Rad Mid Time`,
     meas_t__h = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60 / 60,
     tot_t__h = slider::slide_dbl(meas_t__h, ~sum(.x , na.rm = TRUE), .before = Inf),
-    tot_t__day = tot_t__h/24,
+    tot_t__day = tot_t__h / 24,
     wind__ms = `Wind speed (m/s)`,
     temp_wat__C = lag(`Water Temperature C`),
     temp_wat__K = temp_wat__C + 273.15,
-    L = 10^(-(980/(273+temp_wat__C)+1.59)),
-    M = (999.842594+(0.06793952)*temp_wat__C-(0.00909529)*temp_wat__C^2+(0.0001001685)*temp_wat__C^3-(0.000001120083)*temp_wat__C^4+(0.000000006536332)*temp_wat__C^5)/1000,
-    N = 0.00002414*10^(247.8/(temp_wat__K-140))*1000/100,
+    L = 10^(-(980 / (273 + temp_wat__C) + 1.59)),
+    M = (999.842594 + (0.06793952) * temp_wat__C - (0.00909529) * temp_wat__C^2 + (0.0001001685) * temp_wat__C^3 - (0.000001120083) * temp_wat__C^4 + (0.000000006536332) * temp_wat__C^5) / 1000,
+    N = 0.00002414 * 10^(247.8 / (temp_wat__K - 140)) * 1000 / 100,
     O = N / M,
     P = O / L,
-    Q = 0.105+0.405*exp(-0.05027*temp_wat__C),
+    S = ((0.45 * (wind__ms^1.6) * ((P / 600)^-0.667)) / 100) / 60,
+    Q = 0.105 + 0.405 * exp(-0.05027 * temp_wat__C),
     V = lag(`Rn in Air dpm/m3`),
-    R = (1875)-(Q*V), # 1875
-    S = ((0.45*(wind__ms^1.6)*((P/600)^-0.667))/100)/60,
-    T = R*S*60, 
     U = lag(`Water Level m`),
-    # V = lag(`Rn in Air dpm/m3`),
+    user_Rn_atm__dpmm3 = 800,
+    user_depth__m = 1.3,
     # decay constant of Rn in hours
-    lambda = log(2)/(3.84 * 24),
-    Rn_flux__Bqm2hr = 29.3324, # calculate from components
-    W = 1875, #`Rn in Water dpm/m3`,
-    W = lag(W) * exp(-lambda * meas_t__h) + (Rn_flux__Bqm2hr - T) * (1 - exp(-lambda * meas_t__h)) / lambda / U,
+    user_lambda__hr = log(2) / (3.84 * 24),
+    user_Rn_ss__dpmm3 = 3000, # driver of optimization
+    user_Rn_ini_inv__dpmm2 = user_depth__m * user_Rn_ss__dpmm3,
+    user_Rn_ss_flux__dpmm2hr = user_lambda__hr * user_Rn_ini_inv__dpmm2, # calculate from components
+    user_Rn_ss_inv__dpmm2 = user_Rn_ss_flux__dpmm2hr / user_lambda__hr,
+    user_kin_visc__cm2s = 0.01004,
+    user_mol_diff__cm2s = 0.000012,
+    X = user_kin_visc__cm2s / O,
+    Y = (34.6 * X * (user_mol_diff__cm2s^0.5)*(wind__ms^1.5)) / (24 * 60),
+    W = c(`Rn in Water dpm/m3`[2], rep(NA_real_, length(time) - 1)), #`Rn in Water dpm/m3`,
+  )
 
+for(t_ind in seq_along(dat_tbl$time)[-1]) {
+  dat_tbl$W[t_ind] = dat_tbl %$% {W[t_ind - 1] * exp(-user_lambda__hr[t_ind] * meas_t__h[t_ind]) + (user_Rn_ss_flux__dpmm2hr[t_ind] - (W[t_ind-1] - (Q[t_ind] * V[t_ind])) * S[t_ind] * 60) * (1 - exp(-user_lambda__hr[t_ind] * meas_t__h[t_ind])) / user_lambda__hr[t_ind] / U[t_ind]}
+  }
 
-      )
-    # the loaded data should have a fixed periodicity
-    # interpolate linearly when a single value is missing from the time series
-    # (e.g. due to issues with the measuring device)
-    Rn_wat__Bqm3 = if_else(is.na(Rn_wat__Bqm3), (lag(Rn_wat__Bqm3) + lead(Rn_wat__Bqm3))/2, Rn_wat__Bqm3),
-    temp_wat__C = if_else(is.na(temp_wat__C), (lag(temp_wat__C) + lead(temp_wat__C))/2, temp_wat__C),
-    sal_wat = if_else(is.na(sal_wat), (lag(sal_wat) + lead(sal_wat))/2, sal_wat),
-    
-    # decay constant of Rn in hours
-    lambda = log(2)/(3.84 * 24),
-    
-    # calculates coastal radon measurement time interval in minutes based on provided measurement times, 
-    # all other time series measurements provided by the user should be averaged to this interval
-    meas_t__min = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60,
-  
-    # change in water depth between two time stamps
-    diff_owl__m = depth__m - lag(depth__m),
+dat_tbl <- dat_tbl %>%
+  mutate(
+    R = lag(W) - (Q*V),
+    T = R * S * 60,
+    Z = R * Y * 60,
+    # there is an error in the xls: not using lambda in the next line:
+    AB = c((lag(W) * exp(-user_lambda__hr * meas_t__h) * U)[1:2], rep(NA_real_, length(time) - 2)),
+    AC = user_Rn_ss_flux__dpmm2hr * (1 - exp(-user_lambda__hr * meas_t__h)) / user_lambda__hr,
+    AD = T * (1 - exp(-user_lambda__hr * meas_t__h)) / user_lambda__hr,
+    AE = AB + (AC - AD),
+  )
 
-    # water temperature converted from degrees Celsius to Kelvin
-    temp_wat__K = temp_wat__C + 273.15,
+for(t_ind in seq_along(dat_tbl$time)[-(1:2)]) {
+  dat_tbl$AB[t_ind] = dat_tbl %$% {AE[t_ind - 1] * exp(-user_lambda__hr[t_ind] * meas_t__h[t_ind])}
+  dat_tbl$AE[t_ind] = dat_tbl %$% {AB[t_ind] + (AC[t_ind] - AD[t_ind])}
+}
 
-    # water/air partitioning coefficient kw_air based on water temperature and salinity; 
-    # calculations and coefficients from Schubert et al. 2012
-    kw_air =
-      exp(-76.14 + 120.36 * (100 / temp_wat__K) + 31.26 * log(temp_wat__K / 100) + sal_wat *
-        (-0.2631 + 0.1673 * (temp_wat__K / 100) + (-0.0270 * (temp_wat__K / 100)^2))) *
-        temp_wat__K / 273.15,
-
-    # if Rad-Aqua was used to collect radon data and radon in the exchanger (therfore in air) is provided 
-    # it is converted to Rn in water in this step;
-    # otherwise, the provided radon in water is used for further calculations
-    # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
-    # CHANGED PRECEDENCE: Rn_wat__Bqm3 over Rn_exch__Bqm3 * kw_air
-    # Rn_wat__Bqm3 = if (!(Rn_exch__Bqm3 %>% is.null()) & (!(Rn_exch__Bqm3 %>% is.na())) %>% any()) {
-    #   Rn_exch__Bqm3 * kw_air
-    # } else {
-    #   Rn_wat__Bqm3
-    # },
-    Rn_wat__Bqm3 = if (!(Rn_wat__Bqm3 %>% is.null()) & (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
-      Rn_wat__Bqm3
-    } else {
-      Rn_exch__Bqm3 * kw_air
-    },
+dat_tbl <- dat_tbl %>%
+  mutate(
+    AF = AE / user_depth__m,
+    AG = Z * (1 - exp(-user_lambda__hr * meas_t__h)) / user_lambda__hr,
+    AH = AB + (AC - AG),
+    AI = AH / U,
+    AJ = Q/Q[2],
+    AK = c((AF * user_depth__m)[1:2], (AF * AJ)[-(1:2)]),
+    AL = AI * AJ, 
+    # AM = `Rn in Water dpm/m3`,
+    AN = (AK - `Rn in Water dpm/m3`)^2,
+    AO = (AL - `Rn in Water dpm/m3`)^2,
     
-    # Rn losses by evasion into the atmosphere are calculated according to MacIntyre et al. (1995)
-    # for wind speeds above 3.6 m/s Sc^-1/2 and for wind speeds below 3.6 m/s Sc^-2/3 is applied (Turner et al., 1996);
-    # for wind speeds below 1.5 m/s k is assumed to be constant and equivalent to wind speeds of 1.5 m/s (Ocampo-torres et al., 1994)
-    # note that kinematic viscosity is considered constant, one can calculate more accurate values that account for salinity and temperature
-     f_Rn_atm__Bqm2hr =
-      case_when(
-        wind__ms > 3.6 ~
-          (0.45 * wind__ms^1.6 *
-            ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-1 / 2)) / 100 / 60 *
-            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
-        wind__ms > 1.5 ~
-          (0.45 * wind__ms^1.6 *
-             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
-            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
-        TRUE ~
-          (0.45 * 1.5^1.6 *
-             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
-            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60
-      ),
-    
-    # estimated Rn in water
-
-    # inventory contributed by Rn diffusion from sediments
-    inv_dif__Bqm2 = 0, #f_dif__Bqm2hr * (1 - exp(-lambda * meas_t__min / 60)) / lambda,
-    
-    # Rn inventory correctred for decay over measurement time
-    inv_dec__Bqm2 = Rn_wat__Bqm3 * exp(-lambda * meas_t__min / 60) * depth__m, 
-    
-    # Rn inventory contributed by atmospheric evasion over measurement time
-    inv_eva__Bqm2 = f_Rn_atm__Bqm2hr * (1 - exp(-lambda * meas_t__min / 60)) / lambda,
-    
-    # # excess Rn in water is calculated by sutracting dissolved 226Ra in water
-    # ex_Rn_wat__Bqm3 = Rn_wat__Bqm3 - Ra226_wat__Bqm3,
-
   ) %>% 
   
   # drop columns with no values (keep those with at least one value)
   select(where(~(!(.x %>% is.na())) %>% any()))
 
+RMSE_vals <- dat_tbl %>% 
+  summarize(
+    RMSE_old = mean(AN, na.rm = TRUE) %>% sqrt(),
+    RMSE_new = mean(AO, na.rm = TRUE) %>% sqrt(),
+  )
+
+# results saved in a csv file
+write_csv(dat_tbl, here(study_folder, "output", "rn_budgetND.csv"), na = "")
+
+# *************************
+#  optimization ----
+# *************************
+
 # objective function to find steady state Rn flux
-Rn_ss_calc <- function(ini_Rn_flux__Bqm2hr){
+Rn_ss_calc <- function(optim_driver){
   #input: ini_Rn_flux__Bqm2hr - initial value for Rn flux via SGD
   
-  # the calculation is based on transformations of the data
-  obj_fun <- dat_tbl %>%
+  # create data table
+  dat_tbl <- in_tbl %>%
     mutate(
       
-      # Rn inventory contributed by SGD over measurement time
-      inv_sgd__Bqm2 = ini_Rn_flux__Bqm2hr * (1 - exp(-lambda * meas_t__min / 60)) / lambda,
-      
-      # Rn inventory contributed by all considered components
-      inv_net__Bqm2 = inv_dec__Bqm2 + inv_sgd__Bqm2 - inv_eva__Bqm2 + inv_dif__Bqm2,
-      
-      # modeled Rn concentration
-      mod_Rn_wat__Bqm3 = inv_net__Bqm2 / depth__m,
-      
-      # difference between actual and modeled Rn concentration
-      diff_Rn_wat__Bqm3 = Rn_wat__Bqm3 - mod_Rn_wat__Bqm3,
-      
-      # root mean squared difference
-      rmse_Rn_wat__Bqm3 = (diff_Rn_wat__Bqm3^2) %>% mean(na.rm = TRUE) %>% sqrt()
+      # calculates radon measurement time interval in hours based on provided measurement times, 
+      # all other time series measurements provided by the user should be averaged to this interval
+      time = `Rad Mid Time`,
+      meas_t__h = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60 / 60,
+      tot_t__h = slider::slide_dbl(meas_t__h, ~sum(.x , na.rm = TRUE), .before = Inf),
+      tot_t__day = tot_t__h / 24,
+      wind__ms = `Wind speed (m/s)`,
+      temp_wat__C = lag(`Water Temperature C`),
+      temp_wat__K = temp_wat__C + 273.15,
+      L = 10^(-(980 / (273 + temp_wat__C) + 1.59)),
+      M = (999.842594 + (0.06793952) * temp_wat__C - (0.00909529) * temp_wat__C^2 + (0.0001001685) * temp_wat__C^3 - (0.000001120083) * temp_wat__C^4 + (0.000000006536332) * temp_wat__C^5) / 1000,
+      N = 0.00002414 * 10^(247.8 / (temp_wat__K - 140)) * 1000 / 100,
+      O = N / M,
+      P = O / L,
+      S = ((0.45 * (wind__ms^1.6) * ((P / 600)^-0.667)) / 100) / 60,
+      Q = 0.105 + 0.405 * exp(-0.05027 * temp_wat__C),
+      V = lag(`Rn in Air dpm/m3`),
+      U = lag(`Water Level m`),
+      user_Rn_atm__dpmm3 = 800,
+      user_depth__m = 1.3,
+      # decay constant of Rn in hours
+      user_lambda__hr = log(2) / (3.84 * 24),
+      user_Rn_ss__dpmm3 = optim_driver, # driver of optimization
+      user_Rn_ini_inv__dpmm2 = user_depth__m * user_Rn_ss__dpmm3,
+      user_Rn_ss_flux__dpmm2hr = user_lambda__hr * user_Rn_ini_inv__dpmm2, # calculate from components
+      user_Rn_ss_inv__dpmm2 = user_Rn_ss_flux__dpmm2hr / user_lambda__hr,
+      user_kin_visc__cm2s = 0.01004,
+      user_mol_diff__cm2s = 0.000012,
+      X = user_kin_visc__cm2s / O,
+      Y = (34.6 * X * (user_mol_diff__cm2s^0.5)*(wind__ms^1.5)) / (24 * 60),
+      W = c(`Rn in Water dpm/m3`[2], rep(NA_real_, length(time) - 1)), #`Rn in Water dpm/m3`,
+    )
+  
+  for(t_ind in seq_along(dat_tbl$time)[-1]) {
+    dat_tbl$W[t_ind] = dat_tbl %$% {W[t_ind - 1] * exp(-user_lambda__hr[t_ind] * meas_t__h[t_ind]) + (user_Rn_ss_flux__dpmm2hr[t_ind] - (W[t_ind-1] - (Q[t_ind] * V[t_ind])) * S[t_ind] * 60) * (1 - exp(-user_lambda__hr[t_ind] * meas_t__h[t_ind])) / user_lambda__hr[t_ind] / U[t_ind]}
+  }
+  
+  dat_tbl <- dat_tbl %>%
+    mutate(
+      R = lag(W) - (Q*V),
+      T = R * S * 60,
+      Z = R * Y * 60,
+      # there is an error in the xls: not using lambda in the next line:
+      AB = c((lag(W) * exp(-user_lambda__hr * meas_t__h) * U)[1:2], rep(NA_real_, length(time) - 2)),
+      AC = user_Rn_ss_flux__dpmm2hr * (1 - exp(-user_lambda__hr * meas_t__h)) / user_lambda__hr,
+      AD = T * (1 - exp(-user_lambda__hr * meas_t__h)) / user_lambda__hr,
+      AE = AB + (AC - AD),
+    )
+  
+  for(t_ind in seq_along(dat_tbl$time)[-(1:2)]) {
+    dat_tbl$AB[t_ind] = dat_tbl %$% {AE[t_ind - 1] * exp(-user_lambda__hr[t_ind] * meas_t__h[t_ind])}
+    dat_tbl$AE[t_ind] = dat_tbl %$% {AB[t_ind] + (AC[t_ind] - AD[t_ind])}
+  }
+  
+  dat_tbl <- dat_tbl %>%
+    mutate(
+      AF = AE / user_depth__m,
+      AG = Z * (1 - exp(-user_lambda__hr * meas_t__h)) / user_lambda__hr,
+      AH = AB + (AC - AG),
+      AI = AH / U,
+      AJ = Q/Q[2],
+      AK = c((AF * user_depth__m)[1:2], (AF * AJ)[-(1:2)]),
+      AL = AI * AJ, 
+      # AM = `Rn in Water dpm/m3`,
+      AN = (AK - `Rn in Water dpm/m3`)^2,
+      AO = (AL - `Rn in Water dpm/m3`)^2,
       
     ) %>% 
     
-    # rmse_Rn_wat__Bqm3 is a column with identical values, get one of those
-    slice(1) %>% 
-    pull(rmse_Rn_wat__Bqm3)
+    # drop columns with no values (keep those with at least one value)
+    select(where(~(!(.x %>% is.na())) %>% any()))
+  
+  RMSE_vals <- dat_tbl %>% 
+    summarize(
+      RMSE_old = mean(AN, na.rm = TRUE) %>% sqrt(),
+      RMSE_new = mean(AO, na.rm = TRUE) %>% sqrt(),
+    ) %>% 
+    
+    pull(RMSE_new)
   
 }
 
@@ -192,7 +227,7 @@ Rn_ss_calc <- function(ini_Rn_flux__Bqm2hr){
 # Rn_flux__Bqm2hr = lambda * inv_Rn_ss__Bqm2,
 # combine formulas 1 -> 2 -> 3 and take average:
 optim_start <- dat_tbl %>% 
-  summarize(mean(lambda * Rn_wat__Bqm3 * depth__m, na.rm = TRUE)) %>% 
+  summarize(mean(user_Rn_ss__dpmm3, na.rm = TRUE)) %>% 
   pull()
 
 # compare two optimization techniques
@@ -200,43 +235,105 @@ opt1 <- optim(optim_start, Rn_ss_calc, method = "BFGS")
 opt2 <- optimize(Rn_ss_calc, c(0, 50000))
 opt1$par - opt2$minimum
 
-# continue data table
-dat_tbl_cont <- dat_tbl %>%
+
+# *************************
+#  calcs with optimal value ----
+# *************************
+
+optim_driver <- opt1$par
+
+# create data table
+dat_tbl <- in_tbl %>%
   mutate(
+    
+    # calculates radon measurement time interval in hours based on provided measurement times, 
+    # all other time series measurements provided by the user should be averaged to this interval
+    time = `Rad Mid Time`,
+    meas_t__h = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60 / 60,
+    tot_t__h = slider::slide_dbl(meas_t__h, ~sum(.x , na.rm = TRUE), .before = Inf),
+    tot_t__day = tot_t__h / 24,
+    wind__ms = `Wind speed (m/s)`,
+    temp_wat__C = lag(`Water Temperature C`),
+    temp_wat__K = temp_wat__C + 273.15,
+    L = 10^(-(980 / (273 + temp_wat__C) + 1.59)),
+    M = (999.842594 + (0.06793952) * temp_wat__C - (0.00909529) * temp_wat__C^2 + (0.0001001685) * temp_wat__C^3 - (0.000001120083) * temp_wat__C^4 + (0.000000006536332) * temp_wat__C^5) / 1000,
+    N = 0.00002414 * 10^(247.8 / (temp_wat__K - 140)) * 1000 / 100,
+    O = N / M,
+    P = O / L,
+    S = ((0.45 * (wind__ms^1.6) * ((P / 600)^-0.667)) / 100) / 60,
+    Q = 0.105 + 0.405 * exp(-0.05027 * temp_wat__C),
+    V = lag(`Rn in Air dpm/m3`),
+    U = lag(`Water Level m`),
+    user_Rn_atm__dpmm3 = 800,
+    user_depth__m = 1.3,
+    # decay constant of Rn in hours
+    user_lambda__hr = log(2) / (3.84 * 24),
+    user_Rn_ss__dpmm3 = optim_driver, # driver of optimization
+    user_Rn_ini_inv__dpmm2 = user_depth__m * user_Rn_ss__dpmm3,
+    user_Rn_ss_flux__dpmm2hr = user_lambda__hr * user_Rn_ini_inv__dpmm2, # calculate from components
+    user_Rn_ss_inv__dpmm2 = user_Rn_ss_flux__dpmm2hr / user_lambda__hr,
+    user_kin_visc__cm2s = 0.01004,
+    user_mol_diff__cm2s = 0.000012,
+    X = user_kin_visc__cm2s / O,
+    Y = (34.6 * X * (user_mol_diff__cm2s^0.5)*(wind__ms^1.5)) / (24 * 60),
+    W = c(`Rn in Water dpm/m3`[2], rep(NA_real_, length(time) - 1)), #`Rn in Water dpm/m3`,
+  )
 
-    # steady state Rn flux (from optimization above)
-    Rn_flux__Bqm2hr = 29, #opt1$par,
-    
-    # Rn inventory contributed by SGD over measurement time
-    inv_sgd__Bqm2 = Rn_flux__Bqm2hr * (1 - exp(-lambda * meas_t__min / 60)) / lambda,
-    
-    # Rn inventory contributed by all considered components
-    inv_net__Bqm2 = inv_dec__Bqm2 + inv_sgd__Bqm2 - inv_eva__Bqm2 + inv_dif__Bqm2,
-    
-    # modeled Rn concentration
-    mod_Rn_wat__Bqm3 = inv_net__Bqm2 / depth__m,
-    
-    # difference between actual and modeled Rn concentration
-    diff_Rn_wat__Bqm3 = Rn_wat__Bqm3 - mod_Rn_wat__Bqm3,
-    
-    # ground water advection into lake in m/hr which is the same as m3/m2/hr
-    drip_rate__mhr = Rn_flux__Bqm2hr / Rn_gw__Bqm3,
+for(t_ind in seq_along(dat_tbl$time)[-1]) {
+  dat_tbl$W[t_ind] = dat_tbl %$% {W[t_ind - 1] * exp(-user_lambda__hr[t_ind] * meas_t__h[t_ind]) + (user_Rn_ss_flux__dpmm2hr[t_ind] - (W[t_ind-1] - (Q[t_ind] * V[t_ind])) * S[t_ind] * 60) * (1 - exp(-user_lambda__hr[t_ind] * meas_t__h[t_ind])) / user_lambda__hr[t_ind] / U[t_ind]}
+}
 
+dat_tbl <- dat_tbl %>%
+  mutate(
+    R = lag(W) - (Q*V),
+    T = R * S * 60,
+    Z = R * Y * 60,
+    # there is an error in the xls: not using lambda in the next line:
+    AB = c((lag(W) * exp(-user_lambda__hr * meas_t__h) * U)[1:2], rep(NA_real_, length(time) - 2)),
+    AC = user_Rn_ss_flux__dpmm2hr * (1 - exp(-user_lambda__hr * meas_t__h)) / user_lambda__hr,
+    AD = T * (1 - exp(-user_lambda__hr * meas_t__h)) / user_lambda__hr,
+    AE = AB + (AC - AD),
+  )
+
+for(t_ind in seq_along(dat_tbl$time)[-(1:2)]) {
+  dat_tbl$AB[t_ind] = dat_tbl %$% {AE[t_ind - 1] * exp(-user_lambda__hr[t_ind] * meas_t__h[t_ind])}
+  dat_tbl$AE[t_ind] = dat_tbl %$% {AB[t_ind] + (AC[t_ind] - AD[t_ind])}
+}
+
+dat_tbl <- dat_tbl %>%
+  mutate(
+    AF = AE / user_depth__m,
+    AG = Z * (1 - exp(-user_lambda__hr * meas_t__h)) / user_lambda__hr,
+    AH = AB + (AC - AG),
+    AI = AH / U,
+    AJ = Q/Q[2],
+    AK = c((AF * user_depth__m)[1:2], (AF * AJ)[-(1:2)]),
+    AL = AI * AJ, 
+    # AM = `Rn in Water dpm/m3`,
+    AN = (AK - `Rn in Water dpm/m3`)^2,
+    AO = (AL - `Rn in Water dpm/m3`)^2,
+    
   ) %>% 
   
   # drop columns with no values (keep those with at least one value)
   select(where(~(!(.x %>% is.na())) %>% any()))
 
+RMSE_vals <- dat_tbl %>% 
+  summarize(
+    RMSE_old = mean(AN, na.rm = TRUE) %>% sqrt(),
+    RMSE_new = mean(AO, na.rm = TRUE) %>% sqrt(),
+  )
+
 # results saved in a csv file
-write_csv(dat_tbl_cont, here(study_folder, "output", "rn_budget.csv"), na = "")
+write_csv(dat_tbl, here(study_folder, "output", "rn_budget.csv"), na = "")
   
 # END OF RADON BUDGET CALCULATION
 
 # plot
-dat_tbl_cont %>% 
+dat_tbl %>% 
   ggplot(mapping = aes(x = time)) + 
-  geom_line(mapping = aes(y = Rn_wat__Bqm3), alpha = 0.6) +
-  geom_point(mapping = aes(y = mod_Rn_wat__Bqm3), color = "red") +
+  geom_line(mapping = aes(y = `Rn in Water dpm/m3`), alpha = 0.6) +
+  geom_point(mapping = aes(y = AL), color = "red") +
   labs(y = "Rn in water: actual (black) vs model (red)") +
   theme_light()
 ggsave(here(study_folder, "output", "rn_budget.png"))
