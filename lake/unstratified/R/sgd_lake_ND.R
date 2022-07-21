@@ -15,13 +15,10 @@
 source(here::here("R", "setup.R"))
 
 # study type (determines folder)
-study_folder <- "lakes/unstratified"
+study_folder <- "lake/unstratified"
 
 # input file name
-csv_file_in <- "sgd_lake_data_Natasha.csv"
-
-# decay constant of Rn in hours
-lambda <- log(2)/(3.84 * 24)
+csv_file_in <- "sgd_lake_unstratified_dataND1.csv"
 
 # *************************
 #  load data ----
@@ -30,23 +27,57 @@ lambda <- log(2)/(3.84 * 24)
 # load the time series
 in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
   # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
-  mutate(across(.cols = 1, .fns = ~ parse_date_time(., c("ymdHMS", "mdyHM", "mdyHMS")))) %>%
+  mutate(across(.cols = 1, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
   mutate(across(.cols = -1, .fns = as.numeric))
+  # mutate(across(.cols = 2:4, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
+  # mutate(across(.cols = -(2:4), .fns = as.numeric))
 
 # *************************
 #  calculations ----
 # *************************
-
+names(in_tbl)
 # create data table
 dat_tbl <- in_tbl %>%
   mutate(
     
+    # calculates radon measurement time interval in hours based on provided measurement times, 
+    # all other time series measurements provided by the user should be averaged to this interval
+    time = `Rad Mid Time`,
+    meas_t__h = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60 / 60,
+    tot_t__h = slider::slide_dbl(meas_t__h, ~sum(.x , na.rm = TRUE), .before = Inf),
+    tot_t__day = tot_t__h/24,
+    wind__ms = `Wind speed (m/s)`,
+    temp_wat__C = lag(`Water Temperature C`),
+    temp_wat__K = temp_wat__C + 273.15,
+    L = 10^(-(980/(273+temp_wat__C)+1.59)),
+    M = (999.842594+(0.06793952)*temp_wat__C-(0.00909529)*temp_wat__C^2+(0.0001001685)*temp_wat__C^3-(0.000001120083)*temp_wat__C^4+(0.000000006536332)*temp_wat__C^5)/1000,
+    N = 0.00002414*10^(247.8/(temp_wat__K-140))*1000/100,
+    O = N / M,
+    P = O / L,
+    Q = 0.105+0.405*exp(-0.05027*temp_wat__C),
+    V = lag(`Rn in Air dpm/m3`),
+    R = (1875)-(Q*V), # 1875
+    S = ((0.45*(wind__ms^1.6)*((P/600)^-0.667))/100)/60,
+    T = R*S*60, 
+    U = lag(`Water Level m`),
+    # V = lag(`Rn in Air dpm/m3`),
+    # decay constant of Rn in hours
+    lambda = log(2)/(3.84 * 24),
+    Rn_flux__Bqm2hr = 29.3324, # calculate from components
+    W = 1875, #`Rn in Water dpm/m3`,
+    W = lag(W) * exp(-lambda * meas_t__h) + (Rn_flux__Bqm2hr - T) * (1 - exp(-lambda * meas_t__h)) / lambda / U,
+
+
+      )
     # the loaded data should have a fixed periodicity
     # interpolate linearly when a single value is missing from the time series
     # (e.g. due to issues with the measuring device)
     Rn_wat__Bqm3 = if_else(is.na(Rn_wat__Bqm3), (lag(Rn_wat__Bqm3) + lead(Rn_wat__Bqm3))/2, Rn_wat__Bqm3),
     temp_wat__C = if_else(is.na(temp_wat__C), (lag(temp_wat__C) + lead(temp_wat__C))/2, temp_wat__C),
     sal_wat = if_else(is.na(sal_wat), (lag(sal_wat) + lead(sal_wat))/2, sal_wat),
+    
+    # decay constant of Rn in hours
+    lambda = log(2)/(3.84 * 24),
     
     # calculates coastal radon measurement time interval in minutes based on provided measurement times, 
     # all other time series measurements provided by the user should be averaged to this interval
@@ -69,12 +100,18 @@ dat_tbl <- in_tbl %>%
     # it is converted to Rn in water in this step;
     # otherwise, the provided radon in water is used for further calculations
     # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
-    Rn_wat__Bqm3 = if (!(Rn_exch__Bqm3 %>% is.null()) & (!(Rn_exch__Bqm3 %>% is.na())) %>% any()) {
-      Rn_exch__Bqm3 * kw_air
-    } else {
+    # CHANGED PRECEDENCE: Rn_wat__Bqm3 over Rn_exch__Bqm3 * kw_air
+    # Rn_wat__Bqm3 = if (!(Rn_exch__Bqm3 %>% is.null()) & (!(Rn_exch__Bqm3 %>% is.na())) %>% any()) {
+    #   Rn_exch__Bqm3 * kw_air
+    # } else {
+    #   Rn_wat__Bqm3
+    # },
+    Rn_wat__Bqm3 = if (!(Rn_wat__Bqm3 %>% is.null()) & (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
       Rn_wat__Bqm3
+    } else {
+      Rn_exch__Bqm3 * kw_air
     },
-
+    
     # Rn losses by evasion into the atmosphere are calculated according to MacIntyre et al. (1995)
     # for wind speeds above 3.6 m/s Sc^-1/2 and for wind speeds below 3.6 m/s Sc^-2/3 is applied (Turner et al., 1996);
     # for wind speeds below 1.5 m/s k is assumed to be constant and equivalent to wind speeds of 1.5 m/s (Ocampo-torres et al., 1994)
@@ -94,9 +131,11 @@ dat_tbl <- in_tbl %>%
              ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
             (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60
       ),
+    
+    # estimated Rn in water
 
     # inventory contributed by Rn diffusion from sediments
-    inv_dif__Bqm2 = f_dif__Bqm2hr * (1 - exp(-lambda * meas_t__min / 60)) / lambda,
+    inv_dif__Bqm2 = 0, #f_dif__Bqm2hr * (1 - exp(-lambda * meas_t__min / 60)) / lambda,
     
     # Rn inventory correctred for decay over measurement time
     inv_dec__Bqm2 = Rn_wat__Bqm3 * exp(-lambda * meas_t__min / 60) * depth__m, 
@@ -144,13 +183,14 @@ Rn_ss_calc <- function(ini_Rn_flux__Bqm2hr){
 }
 
 # minimize objective function with respect to steady state Rn flux
-# initial value is based  on:
-# initial guess of steady state Rn concentration
+# initial value is based on:
+# 1) initial guess of steady state Rn concentration
 # Rn_ss__Bqm3 = Rn_wat__Bqm3,
-# Rn inventory in steady state
+# 2) Rn inventory in steady state
 # inv_Rn_ss__Bqm2 = Rn_ss__Bqm3 * depth__m,
-# initial guess of steady state Rn flux
+# 3) initial guess of steady state Rn flux
 # Rn_flux__Bqm2hr = lambda * inv_Rn_ss__Bqm2,
+# combine formulas 1 -> 2 -> 3 and take average:
 optim_start <- dat_tbl %>% 
   summarize(mean(lambda * Rn_wat__Bqm3 * depth__m, na.rm = TRUE)) %>% 
   pull()
@@ -165,7 +205,7 @@ dat_tbl_cont <- dat_tbl %>%
   mutate(
 
     # steady state Rn flux (from optimization above)
-    Rn_flux__Bqm2hr = opt1$par,
+    Rn_flux__Bqm2hr = 29, #opt1$par,
     
     # Rn inventory contributed by SGD over measurement time
     inv_sgd__Bqm2 = Rn_flux__Bqm2hr * (1 - exp(-lambda * meas_t__min / 60)) / lambda,
