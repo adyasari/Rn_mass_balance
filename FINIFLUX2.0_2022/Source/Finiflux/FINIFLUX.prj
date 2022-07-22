@@ -1,0 +1,139 @@
+<deployment-project plugin="plugin.ezdeploy" plugin-version="1.0">
+  <configuration file="Z:\Hydro\User\frei\Papers\TN_radon\finiflux\source\Feb_2022\FINIFLUX2.0_FOR_WEB_64bit_dll_download\Source\Finiflux\FINIFLUX.prj" location="Z:\Hydro\User\frei\Papers\TN_radon\finiflux\source\Feb_2022\FINIFLUX2.0_FOR_WEB_64bit_dll_download\Source\Finiflux" name="FINIFLUX" target="target.ezdeploy.standalone" target-name="Application Compiler">
+    <param.appname>FINIFLUX</param.appname>
+    <param.icon />
+    <param.icons />
+    <param.version>1.0</param.version>
+    <param.authnamewatermark>Sven Frei</param.authnamewatermark>
+    <param.email>sven.frei@uni-bayreuth.de</param.email>
+    <param.company>University of Bayreuth</param.company>
+    <param.summary />
+    <param.description />
+    <param.screenshot />
+    <param.guid />
+    <param.installpath.string>\University of Bayreuth\FINIFLUX\</param.installpath.string>
+    <param.installpath.combo>option.installpath.programfiles</param.installpath.combo>
+    <param.logo />
+    <param.install.notes />
+    <param.target.install.notes />
+    <param.intermediate>${PROJECT_ROOT}\FINIFLUX\for_testing</param.intermediate>
+    <param.files.only>${PROJECT_ROOT}\FINIFLUX\for_redistribution_files_only</param.files.only>
+    <param.output>${PROJECT_ROOT}\FINIFLUX\for_redistribution</param.output>
+    <param.logdir>${PROJECT_ROOT}\FINIFLUX</param.logdir>
+    <param.enable.clean.build>false</param.enable.clean.build>
+    <param.user.defined.mcr.options />
+    <param.target.type>subtarget.standalone</param.target.type>
+    <param.support.packages />
+    <param.web.mcr>true</param.web.mcr>
+    <param.package.mcr>false</param.package.mcr>
+    <param.no.mcr>false</param.no.mcr>
+    <param.web.mcr.name>MyAppInstaller_web</param.web.mcr.name>
+    <param.package.mcr.name>MyAppInstaller_mcr</param.package.mcr.name>
+    <param.no.mcr.name>MyAppInstaller_app</param.no.mcr.name>
+    <param.windows.command.prompt>true</param.windows.command.prompt>
+    <param.create.log>false</param.create.log>
+    <param.log.file />
+    <param.native.matlab>false</param.native.matlab>
+    <param.checkbox>false</param.checkbox>
+    <param.example />
+    <param.help.text>Syntax 
+	  -? 
+	 
+ Input Arguments 
+	 -?  print help on how to use the application 
+	 input arguments</param.help.text>
+    <unset>
+      <param.icon />
+      <param.icons />
+      <param.version />
+      <param.summary />
+      <param.description />
+      <param.screenshot />
+      <param.guid />
+      <param.installpath.string />
+      <param.installpath.combo />
+      <param.logo />
+      <param.install.notes />
+      <param.target.install.notes />
+      <param.intermediate />
+      <param.files.only />
+      <param.output />
+      <param.logdir />
+      <param.enable.clean.build />
+      <param.user.defined.mcr.options />
+      <param.target.type />
+      <param.support.packages />
+      <param.web.mcr />
+      <param.package.mcr />
+      <param.no.mcr />
+      <param.web.mcr.name />
+      <param.package.mcr.name />
+      <param.no.mcr.name />
+      <param.windows.command.prompt />
+      <param.create.log />
+      <param.log.file />
+      <param.native.matlab />
+      <param.checkbox />
+      <param.example />
+    </unset>
+    <fileset.main>
+      <file>${PROJECT_ROOT}\FINIFLUX.m</file>
+    </fileset.main>
+    <fileset.resources />
+    <fileset.package />
+    <fileset.depfun>
+      <file>${PROJECT_ROOT}\myfun.m</file>
+      <file>${PROJECT_ROOT}\pwr.m</file>
+    </fileset.depfun>
+    <build-deliverables>
+      <file location="${PROJECT_ROOT}\FINIFLUX\for_testing" name="FINIFLUX.exe" optional="false">Z:\Hydro\User\frei\Papers\TN_radon\finiflux\source\Feb_2022\FINIFLUX2.0_FOR_WEB_64bit_dll_download\Source\Finiflux\FINIFLUX\for_testing\FINIFLUX.exe</file>
+      <file location="${PROJECT_ROOT}\FINIFLUX\for_testing" name="splash.png" optional="false">Z:\Hydro\User\frei\Papers\TN_radon\finiflux\source\Feb_2022\FINIFLUX2.0_FOR_WEB_64bit_dll_download\Source\Finiflux\FINIFLUX\for_testing\splash.png</file>
+      <file location="${PROJECT_ROOT}\FINIFLUX\for_testing" name="readme.txt" optional="true">Z:\Hydro\User\frei\Papers\TN_radon\finiflux\source\Feb_2022\FINIFLUX2.0_FOR_WEB_64bit_dll_download\Source\Finiflux\FINIFLUX\for_testing\readme.txt</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>C:\Program Files\MATLAB\R2021b</root>
+      <toolboxes>
+        <toolbox name="matlabcoder" />
+        <toolbox name="embeddedcoder" />
+        <toolbox name="fixedpoint" />
+        <toolbox name="neuralnetwork" />
+      </toolboxes>
+      <toolbox>
+        <matlabcoder>
+          <enabled>true</enabled>
+        </matlabcoder>
+      </toolbox>
+      <toolbox>
+        <embeddedcoder>
+          <enabled>true</enabled>
+        </embeddedcoder>
+      </toolbox>
+      <toolbox>
+        <fixedpoint>
+          <enabled>true</enabled>
+        </fixedpoint>
+      </toolbox>
+      <toolbox>
+        <neuralnetwork>
+          <enabled>true</enabled>
+        </neuralnetwork>
+      </toolbox>
+    </matlab>
+    <platform>
+      <unix>false</unix>
+      <mac>false</mac>
+      <windows>true</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>false</linux>
+      <solaris>false</solaris>
+      <osver>6.1</osver>
+      <os32>false</os32>
+      <os64>true</os64>
+      <arch>win64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>
