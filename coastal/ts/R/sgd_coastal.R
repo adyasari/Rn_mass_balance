@@ -75,13 +75,7 @@ dat_tbl <- in_tbl %>%
     # if Rad-Aqua was used to collect radon data and radon in the exchanger (therfore in air) is provided 
     # it is converted to Rn in water in this step;
     # otherwise, the provided radon in water is used for further calculations
-    # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
-    # CHANGED PRECEDENCE: Rn_wat__Bqm3 over Rn_exch__Bqm3 * kw_air
-    # Rn_wat__Bqm3 = if (!(Rn_exch__Bqm3 %>% is.null()) & (!(Rn_exch__Bqm3 %>% is.na())) %>% any()) {
-    #   Rn_exch__Bqm3 * kw_air
-    # } else {
-    #   Rn_wat__Bqm3
-    # },
+    # the condition checks if a Rn_wat__Bqm3 column exists and if it is non-empty
     Rn_wat__Bqm3 = if (!(Rn_wat__Bqm3 %>% is.null()) & (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
       Rn_wat__Bqm3
     } else {
@@ -161,7 +155,7 @@ dat_tbl <- in_tbl %>%
   select(where(~(!(.x %>% is.na())) %>% any()))
 
 # results saved in a csv file
-write_csv(dat_tbl, here(study_folder, "output", "rn_budget.csv"), na = "")
+write_csv(dat_tbl, here(study_folder, "output", "sgd_coastal_ts_rn_budget.csv"), na = "")
   
 # END OF RADON BUDGET CALCULATION
 

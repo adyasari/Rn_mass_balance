@@ -14,8 +14,8 @@
 # load packages, functions, etc.
 source(here::here("R", "setup.R"))
 
-# study type (determines folder)
-study_folder <- "estuary/ts"
+# if folder hierarchy segmented by study type, specify it here
+study_folder <- "."
 
 # input file name
 csv_file_in <- "sgd_estuary_ts_data.csv"
@@ -56,7 +56,7 @@ dat_tbl <- in_tbl %>%
     # then f_mix_exp__Bqm2hr should be provided in the spreadsheet
     # otherwise, mixing losses will be estimated from the Rn mass balance, see definition of f_Rn_mix__Bqm2hr below
     # the condition checks if a f_mix_exp__Bqm2hr column exists and if it is non-empty
-    f_mix_exp__Bqm2hr = if (!(f_mix_exp__Bqm2hr %>% is.null()) & (!(f_mix_exp__Bqm2hr %>% is.na())) %>% any()) {
+    f_mix_exp__Bqm2hr = if (("f_mix_exp__Bqm2hr" %in% names(.)) && (!(f_mix_exp__Bqm2hr %>% is.na())) %>% any()) {
       f_mix_exp__Bqm2hr %>% if_else(is.na(.), 0, .)
     } else {
       0
@@ -82,7 +82,7 @@ dat_tbl <- in_tbl %>%
     # } else {
     #   Rn_wat__Bqm3
     # },
-    Rn_wat__Bqm3 = if (!(Rn_wat__Bqm3 %>% is.null()) & (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
+    Rn_wat__Bqm3 = if (("Rn_wat__Bqm3" %in% names(.)) && (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
       Rn_wat__Bqm3
     } else {
       Rn_exch__Bqm3 * kw_air
@@ -93,7 +93,7 @@ dat_tbl <- in_tbl %>%
     # for wind speeds above 3.6 m/s Sc^-1/2 and for wind speeds below 3.6 m/s Sc^-2/3 is applied (Turner et al., 1996);
     # for wind speeds below 1.5 m/s k is assumed to be constant and equivalent to wind speeds of 1.5 m/s (Ocampo-torres et al., 1994)
     # note that kinematic viscosity is considered constant, one can calculate more accurate values that account for salinity and temperature
-    f_Rn_atm__Bqm2hr = if (!(wat_current__cms %>% is.null()) & (!(wat_current__cms %>% is.na())) %>% any()) {
+    f_Rn_atm__Bqm2hr = if (("wat_current__cms" %in% names(.)) && (!(wat_current__cms %>% is.na())) %>% any()) {
       case_when(
         wind__ms > 3.6 ~
           ((1 + 1.719 * wat_current__cms^(1 / 2) * depth__m^(-1 / 2) + 2.58 * wind__ms) *

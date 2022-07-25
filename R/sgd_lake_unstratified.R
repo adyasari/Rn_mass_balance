@@ -14,11 +14,11 @@
 # load packages, functions, etc.
 source(here::here("R", "setup.R"))
 
-# study type (determines folder)
-study_folder <- "lake/unstratified"
+# if folder hierarchy segmented by study type, specify it here
+study_folder <- "."
 
 # input file name
-csv_file_in <- "sgd_lake_unstratified_dataND3.csv"
+csv_file_in <- "sgd_lake_unstratified_data.csv"
 
 # *************************
 #  load data ----
@@ -64,7 +64,7 @@ Rn_ss_calc <- function(in_tbl, optim_driver = NULL){
       # it is converted to Rn in water in this step;
       # otherwise, the provided radon in water is used for further calculations
       # the condition checks if a Rn_wat__Bqm3 column exists and if it is non-empty
-      Rn_wat__Bqm3 = if (!(Rn_wat__Bqm3 %>% is.null()) & (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
+      Rn_wat__Bqm3 = if (("Rn_wat__Bqm3" %in% names(.)) && (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
         Rn_wat__Bqm3
       } else {
         Rn_exch__Bqm3 * kw_air
@@ -132,8 +132,8 @@ Rn_ss_calc <- function(in_tbl, optim_driver = NULL){
 dat_out <- Rn_ss_calc(in_tbl)
 dat_tbl <- dat_out$dat
 
-# results saved in a csv file
-write_csv(dat_tbl, here(study_folder, "output", "rn_budgetND.csv"), na = "")
+# intermediate results saved in a csv file
+# write_csv(dat_tbl, here(study_folder, "output", "sgd_lake_unstratified_rn_budget.csv"), na = "")
 
 # *************************
 #  optimization ----
