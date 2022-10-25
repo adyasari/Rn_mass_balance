@@ -1,17 +1,21 @@
 # Rn_mass_balance
 
-Click on the green `Code` button on GitHub.com to clone, fork or download the repository. Use the `Rn_mass_balance.Rproj` file in the local project folder to launch the project in `RStudio` (you need to have `R` and `RStudio` already installed on your computer). **Verify in the top right corner of `RStudio` that you are working within the project.** When the project is launched the first time, the [`renv` package maneger](https://rstudio.github.io/renv/articles/collaborating.html "collaborating with renv") should automatically bootstrap itself, downloading and installing the appropriate version of `renv` into the project library. After this has completed, use `renv::restore()` to restore the project library locally on your machine. 
+Click on the green `Code` button on GitHub.com to clone, fork or download the repository. The `FINIFLUX2.0_2022` folder contains the `Matlab` based program "Finite element method for quantifying groundwater fluxes to streams using Radon", along with installation instructions and a user manual in pdf format. All other files and folders in the repository are associated with `R` scripts that quantify Radon budgets in coastal, estuarine, and lake environments. The rest of this page focuses on these `R` scripts.
+
+Use the `Rn_mass_balance.Rproj` file in the local project folder to launch the project in `RStudio` (you need to have `R` and `RStudio` already installed on your computer). **Verify in the top right corner of `RStudio` that you are working within the project.** When the project is launched the first time, the [`renv` package maneger](https://rstudio.github.io/renv/articles/collaborating.html "collaborating with renv") should automatically bootstrap itself, downloading and installing the appropriate version of `renv` into the project library. After this has completed, use `renv::restore()` to restore the project library locally on your machine. 
 
 The folder structure is the following:
 
--   `input` - input files (e.g. data in csv format)
--   `output` - output files (e.g. data in csv format)
+-   `input` - input files (i.e. data in csv format)
+-   `output` - output files (i.e. data in csv format)
 -   `R` - the `R` code for the project
 -   `renv` - contains packages used in the project (should not be edited by a user)
 
-The code in the `analysis.R` script analyzes coastal radon mass balance from coastal radon time series measurements - at least 2 such measurements of the following variables are required: radon in water, radon in air, radon in groundwater, water temperature and salinity, water depth, and wind speed. The code is freely available to download and use. The use of the code assumes that a reference of the source will be included in resulting work (paper, report, presentation). APA and BibTeX citation formats are provided in the right hand column of the GitHub page. The authors made their best efforts but do not guarantee successful application of the code on all platforms and all data formats. 
+The `R/setup.R` and `R/util_funs.R` scripts are not intended to be edited by the user.
 
-The `setup.R` and `util_funs.R` scripts are not intended to be edited by the user.
+## THE REST OF THIS DOCUMENT NEEDS TO BE UPDATED
+
+The code in the `analysis.R` script analyzes coastal radon mass balance from coastal radon time series measurements - at least 2 such measurements of the following variables are required: radon in water, radon in air, radon in groundwater, water temperature and salinity, water depth, and wind speed. The code is freely available to download and use. The use of the code assumes that a reference of the source will be included in resulting work (paper, report, presentation). APA and BibTeX citation formats are provided in the right hand column of the GitHub page. The authors made their best efforts but do not guarantee successful application of the code on all platforms and all data formats. 
 
 Input file format – `csv`. The file name is specified near the top of the `analysis.R` script, for example: 
 ````
