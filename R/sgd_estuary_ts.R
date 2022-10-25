@@ -39,8 +39,8 @@ dat_tbl <- in_tbl %>%
   mutate(
 
     # the loaded data should have a fixed periodicity
-    # interpolate linearly when a single value is missing from the time series
-    # (e.g. due to issues with the measuring device)
+    # missing values are filled in by interpolating linearly when a single value 
+    # is missing from the time series (e.g. due to issues with measurement devices etc.)
     Rn_wat__Bqm3 = if_else(is.na(Rn_wat__Bqm3), (lag(Rn_wat__Bqm3) + lead(Rn_wat__Bqm3)) / 2, Rn_wat__Bqm3),
     temp_wat__C = if_else(is.na(temp_wat__C), (lag(temp_wat__C) + lead(temp_wat__C)) / 2, temp_wat__C),
     sal_wat = if_else(is.na(sal_wat), (lag(sal_wat) + lead(sal_wat)) / 2, sal_wat),
@@ -72,7 +72,7 @@ dat_tbl <- in_tbl %>%
         (-0.2631 + 0.1673 * (temp_wat__K / 100) + (-0.0270 * (temp_wat__K / 100)^2))) *
         temp_wat__K / 273.15,
 
-    # if Rad-Aqua was used to collect radon data and radon in the exchanger (therfore in air) is provided 
+    # if Rad-Aqua was used to collect radon data and radon in the exchanger (therefore in air) is provided 
     # it is converted to Rn in water in this step;
     # otherwise, the provided radon in water is used for further calculations
     # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
