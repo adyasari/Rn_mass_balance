@@ -15,7 +15,7 @@ The `R/setup.R` and `R/util_funs.R` scripts are not intended to be edited by the
 
 ## THE REST OF THIS DOCUMENT NEEDS TO BE UPDATED
 
-The code in the `analysis.R` script analyzes coastal radon mass balance from coastal radon time series measurements - at least 2 such measurements of the following variables are required: radon in water, radon in air, radon in groundwater, water temperature and salinity, water depth, and wind speed. The code is freely available to download and use. The use of the code assumes that a reference of the source will be included in resulting work (paper, report, presentation). APA and BibTeX citation formats are provided in the right hand column of the GitHub page. The authors made their best efforts but do not guarantee successful application of the code on all platforms and all data formats. 
+The other scripts in the `R` folder analyze coastal radon mass balance from coastal radon time series measurements - at least 2 such measurements of the following variables are required: radon in water, radon in air, radon in groundwater, water temperature and salinity, water depth, and wind speed. The code is freely available to download and use. The use of the code assumes that a reference of the source will be included in resulting work (paper, report, presentation). APA and BibTeX citation formats are provided in the right hand column of the GitHub page. The authors made their best efforts but do not guarantee successful application of the code on all platforms and all data formats. 
 
 Input file format – `csv`. The file name is specified near the top of the `analysis.R` script, for example: 
 ````
