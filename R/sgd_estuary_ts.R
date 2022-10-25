@@ -88,7 +88,7 @@ dat_tbl <- in_tbl %>%
       Rn_exch__Bqm3 * kw_air
     },
     
-    # Rn losses by evasion into the atmosphere are calculated either according to XX or according to MacIntyre et al. (1995)
+    # Rn losses by evasion into the atmosphere are calculated either according to Borges et al., 2004 or according to MacIntyre et al. (1995)
     # if wat_current__cms is provided in the spreadsheet, then ...
     # for wind speeds above 3.6 m/s Sc^-1/2 and for wind speeds below 3.6 m/s Sc^-2/3 is applied (Turner et al., 1996);
     # for wind speeds below 1.5 m/s k is assumed to be constant and equivalent to wind speeds of 1.5 m/s (Ocampo-torres et al., 1994)
