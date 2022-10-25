@@ -1,5 +1,5 @@
 # *************************
-# Rn mass balance calculation for time series lake radon budget
+# Rn mass balance calculation for time series lake radon budget after Dimova and Burnett, 2011
 # Author: Peter Fuleky
 # Date: 2022-05-22
 # notes:
@@ -50,7 +50,7 @@ Rn_ss_calc <- function(in_tbl, optim_driver = NULL){
       meas_t__h = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60 / 60,
       
       # wind__ms = wind__ms, # not lagged
-      temp_wat__C = lag(temp_wat__C), # lagged WHY?
+      temp_wat__C = lag(temp_wat__C), # lagged WHY??? parameters are taken from previous measurment step to account for radon measurement delay???
       temp_wat__K = temp_wat__C + 273.15,
       mole_diff_Rn__cm2s = 10^(-(980 / (273 + temp_wat__C) + 1.59)),
       dens_wat__gcm3 = (999.842594 + (0.06793952) * temp_wat__C - (0.00909529) * temp_wat__C^2 + (0.0001001685) * temp_wat__C^3 - (0.000001120083) * temp_wat__C^4 + (0.000000006536332) * temp_wat__C^5) / 1000,
@@ -60,7 +60,7 @@ Rn_ss_calc <- function(in_tbl, optim_driver = NULL){
       k_piston_Rn__mmin = ((0.45 * (wind__ms^1.6) * ((schm_num / 600)^-0.667)) / 100) / 60,
       kw_air = 0.105 + 0.405 * exp(-0.05027 * temp_wat__C),
       
-      # if Rad-Aqua was used to collect radon data and radon in the exchanger (therfore in air) is provided 
+      # if Rad-Aqua was used to collect radon data and radon in the exchanger (therefore in air) is provided 
       # it is converted to Rn in water in this step;
       # otherwise, the provided radon in water is used for further calculations
       # the condition checks if a Rn_wat__Bqm3 column exists and if it is non-empty
@@ -70,8 +70,8 @@ Rn_ss_calc <- function(in_tbl, optim_driver = NULL){
         Rn_exch__Bqm3 * kw_air
       },
       
-      Rn_air__Bqm3 = lag(Rn_air__Bqm3), # lagged WHY?
-      depth__m = lag(depth__m), # lagged WHY?
+      Rn_air__Bqm3 = lag(Rn_air__Bqm3), # lagged WHY???
+      depth__m = lag(depth__m), # lagged WHY???
       
       # decay constant of Rn in hours
       lambda__hr = log(2) / (3.84 * 24),
