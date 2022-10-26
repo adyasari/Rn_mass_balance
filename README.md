@@ -33,13 +33,13 @@ The column headings in the `csv` files list the input variables used in the anal
 
 -   `Rn_offshore__Bqm3` – radon activity in offshore ocean in units of Bq/m3, either determined directly or approximated from offshore dissolved 226Ra measurements, however this latter will result in over-correction as it neglects radon evasion, `Rn_offshore__Bqm3` is used to correct for radon input from offshore brought to the coastline by flood tide
 
--   `Rn_dws_Bqm3` – radon activity at the downstream boundary in units of Bq/m3
+-   `Rn_dws_Bqm3` – radon activity at the downstream estuarine boundary in units of Bq/m3
 
--   `q_dws__m3d` – river discharge at the downstream boundary in units of m3/d
+-   `q_dws__m3d` – river discharge at the downstream estuarine boundary in units of m3/d
 
--   `Rn_ups__Bqm3` – radon activity at the upstream boundary in units of Bq/m3
+-   `Rn_ups__Bqm3` – radon activity at the upstream estuarine boundary in units of Bq/m3
 
--   `q_ups__m3d` – river discharge at the upstream boundary in units of m3/d
+-   `q_ups__m3d` – river discharge at the upstream estuarine boundary in units of m3/d
 
 -   `v_box__m3` – box volume in units of m3
 
