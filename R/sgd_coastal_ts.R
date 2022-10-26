@@ -1,5 +1,5 @@
 # *************************
-# Rn mass balance calculation for time series coastal radon budget after Burnett and Dulaiova, 2006
+# Rn mass balance calculation for time series coastal radon budget based on Burnett and Dulaiova, 2006
 # Author: Peter Fuleky
 # Date: 2022-05-22
 # notes:
@@ -145,9 +145,9 @@ dat_tbl <- in_tbl %>%
     # total radon flux is calculated by adding radon lost by mixing losses to net radon flux
     f_Rn_total__Bqm2hr = f_Rn_net__Bqm2hr + f_Rn_mix__Bqm2hr,
 
-    # groundwater discharge f_gw__m3m2d equals the total Rn flux f_Rn_total__Bqm2hr 
+    # groundwater discharge q_gw__m3m2d equals the total Rn flux f_Rn_total__Bqm2hr 
     # divided by groundwater Rn activity
-    f_gw__m3m2d = (f_Rn_total__Bqm2hr / Rn_gw__Bqm3) * 24
+    q_gw__m3m2d = (f_Rn_total__Bqm2hr / Rn_gw__Bqm3) * 24
     
   ) %>% 
 

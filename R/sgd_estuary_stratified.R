@@ -1,5 +1,5 @@
 # *************************
-# Rn mass balance calculation for time series lake radon budget
+# Rn mass balance calculation for time series estuarine radon budget
 # Author: Peter Fuleky
 # Date: 2022-05-22
 # notes:
@@ -18,7 +18,7 @@ source(here::here("R", "setup.R"))
 study_folder <- "."
 
 # input file name
-csv_file_in <- "sgd_estuary_ts_data.csv"
+csv_file_in <- "sgd_estuary_stratified_data.csv"
 
 # *************************
 #  load data ----
@@ -49,18 +49,21 @@ dat_tbl <- in_tbl %>%
     # all other time series parameters provided by the user should be averaged to this interval
     meas_t__min = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60,
 
-    # change in water depth between two time stamps
-    diff_owl__m = depth__m - lag(depth__m),
+    # # change in water depth between two time stamps
+    # diff_owl__m = depth__m - lag(depth__m),
 
-    # if radon mixing losses are determined via an independent method (current measurements, residence time estimates)
-    # then f_mix_exp__Bqm2hr should be provided in the spreadsheet
-    # otherwise, mixing losses will be estimated from the Rn mass balance, see definition of f_Rn_mix__Bqm2hr below
-    # the condition checks if a f_mix_exp__Bqm2hr column exists and if it is non-empty
-    f_mix_exp__Bqm2hr = if (("f_mix_exp__Bqm2hr" %in% names(.)) && (!(f_mix_exp__Bqm2hr %>% is.na())) %>% any()) {
-      f_mix_exp__Bqm2hr %>% if_else(is.na(.), 0, .)
-    } else {
-      0
-    },
+    # decay constant of Rn in hours
+    lambda__hr = log(2) / (3.84 * 24),
+
+    # # if radon mixing losses are determined via an independent method (current measurements, residence time estimates)
+    # # then f_mix_exp__Bqm2hr should be provided in the spreadsheet
+    # # otherwise, mixing losses will be estimated from the Rn mass balance, see definition of f_Rn_mix__Bqm2hr below
+    # # the condition checks if a f_mix_exp__Bqm2hr column exists and if it is non-empty
+    # f_mix_exp__Bqm2hr = if (("f_mix_exp__Bqm2hr" %in% names(.)) && (!(f_mix_exp__Bqm2hr %>% is.na())) %>% any()) {
+    #   f_mix_exp__Bqm2hr %>% if_else(is.na(.), 0, .)
+    # } else {
+    #   0
+    # },
 
     # water temperature converted from degrees Celsius to Kelvin
     temp_wat__K = temp_wat__C + 273.15,
@@ -125,58 +128,40 @@ dat_tbl <- in_tbl %>%
       )
     },
 
-    # excess Rn in water is calculated by subtracting dissolved 226Ra in water
-    ex_Rn_wat__Bqm3 = Rn_wat__Bqm3 - Ra226_wat__Bqm3,
-
-    # excess Rn inventory is excess Rn activity times water depth or depth of mixed layer/groundwater plume thickness
-    ex_Rn_wat_inv__Bqm2 = ex_Rn_wat__Bqm3 * depth__m,
-
-    # change in radon inventory is the difference between radon inventories in two consecutive time steps
-    # the change in radon inventory is radon flux over the measurement time period and is converted to per hour flux
-    f_Rn_gross__Bqm2hr = (ex_Rn_wat_inv__Bqm2 - lag(ex_Rn_wat_inv__Bqm2)) * 60 / meas_t__min,
-
-    # Rn brought in by tides from offshore
-    f_Rn_flood__Bqm2hr = if_else(depth__m - lag(depth__m) > 0,
-      ((depth__m - lag(depth__m)) * Rn_offshore__Bqm3) * 60 / meas_t__min,
-      0,
-      NA_real_
-    ),
-
-    # Rn lost from coastal to offshore areas
-    f_Rn_ebb__Bqm2hr = if_else(depth__m - lag(depth__m) < 0,
-      (-(depth__m - lag(depth__m)) * ex_Rn_wat__Bqm3) * 60 / meas_t__min,
-      0,
-      NA_real_
-    ),
-
-    # all derived Rn fluxes summed together to get net Rn change per hour
-    f_Rn_net__Bqm2hr = f_Rn_gross__Bqm2hr +
-      f_Rn_atm__Bqm2hr +
-      f_Rn_ebb__Bqm2hr -
-      f_Rn_flood__Bqm2hr -
-      f_dif__Bqm2hr +
-      f_mix_exp__Bqm2hr,
-
-    # if f_mix_exp__Bqm2hr has not been provided then losses by mixing are set to equal negative f_Rn_net__Bqm2hr
-    # this is a conservative approach providing minimal estimate of mixing loss
-    f_Rn_mix__Bqm2hr = if_else(f_Rn_net__Bqm2hr < 0,
-      -f_Rn_net__Bqm2hr,
-      0,
-      NA_real_
-    ),
-
-    # total radon flux is the one corrected for mixing losses
-    f_Rn_total__Bqm2hr = f_Rn_net__Bqm2hr + f_Rn_mix__Bqm2hr,
-
-    # groundwater discharge f_gw__m3m2d equals the total Rn flux f_Rn_total__Bqm2hr
-    # divided by groundwater Rn activity
-    f_gw__m3m2d = (f_Rn_total__Bqm2hr / Rn_gw__Bqm3) * 24
+    # explain this equation
+    q_vert_m3d = (q_dws__m3d * sal_dws - q_ups__m3d * sal_ups) / (sal_bot - sal_dws),
+    
+    # explain this equation
+    q_gw_surf__m3m2d = (
+      q_dws__m3d * Rn_dws__Bqm3 + 
+        f_Rn_atm__Bqm2hr * 24 * a_box__m2 + 
+        Rn_wat_surf__Bqm3 * lambda__hr / 24 * v_box__m3 + 
+        q_vert_m3d * Rn_wat_surf__Bqm3 - 
+        q_ups__m3d * Rn_ups__Bqm3 - 
+        Ra226_wat__Bqm3 * lambda__hr / 24 * v_box__m3 - 
+        q_vert_m3d * Rn_wat_bot__Bqm3
+      ) / Rn_gw_surf__Bqm3,
+    
+    # explain this equation
+    q_gw_btm__m3m2d = (
+      q_vert_m3d * Rn_wat_bot__Bqm3 + 
+        Rn_wat_bot__Bqm3 * lambda__hr / 24 * v_box__m3 - 
+        q_dws__m3d * Rn_dws__Bqm3 - 
+        Ra226_wat__Bqm3 * lambda__hr / 24 * v_box__m3 - 
+        f_dif__Bqm2hr * a_box__m2 - 
+        q_vert_m3d * Rn_wat_surf__Bqm3
+      ) /  Rn_gw_bot__Bqm3,
+    
+    # explain this equation
+    q_gw__m3m2d = q_gw_surf__m3m2d + q_gw_btm__m3m2d,
+    
   ) %>%
+  
   # drop columns with no values (keep those with at least one value)
   select(where(~ (!(.x %>% is.na())) %>% any()))
 
 # results saved in a csv file
-write_csv(dat_tbl, here(study_folder, "output", "sgd_estuary_ts_rn_budget.csv"), na = "")
+write_csv(dat_tbl, here(study_folder, "output", "sgd_estuary_stratified_rn_budget.csv"), na = "")
 
 # END OF RADON BUDGET CALCULATION
 

@@ -1,5 +1,5 @@
 # *************************
-# Rn mass balance calculation for time series lake radon budget after Dimova and Burnett, 2011
+# Rn mass balance calculation for time series lake radon budget based on Dimova and Burnett, 2011
 # Author: Peter Fuleky
 # Date: 2022-05-22
 # notes:
@@ -50,7 +50,7 @@ Rn_ss_calc <- function(in_tbl, optim_driver = NULL){
       meas_t__h = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60 / 60,
       
       # wind__ms = wind__ms, # not lagged
-      temp_wat__C = lag(temp_wat__C), # lagged WHY??? parameters are taken from previous measurment step to account for radon measurement delay???
+      temp_wat__C = lag(temp_wat__C), # lagged WHY??? parameters are taken from previous measurement step to account for radon measurement delay???
       temp_wat__K = temp_wat__C + 273.15,
       mole_diff_Rn__cm2s = 10^(-(980 / (273 + temp_wat__C) + 1.59)),
       dens_wat__gcm3 = (999.842594 + (0.06793952) * temp_wat__C - (0.00909529) * temp_wat__C^2 + (0.0001001685) * temp_wat__C^3 - (0.000001120083) * temp_wat__C^4 + (0.000000006536332) * temp_wat__C^5) / 1000,

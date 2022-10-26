@@ -1,6 +1,8 @@
 # Rn_mass_balance
 
-Click on the green `Code` button on GitHub.com to clone, fork or download the repository. The `FINIFLUX2.0_2022` folder contains the `Matlab` based program "Finite element method for quantifying groundwater fluxes to streams using Radon", along with installation instructions and a user manual in pdf format. All other files and folders in the repository are associated with `R` scripts that quantify Radon budgets in coastal, estuarine, and lake environments. The rest of this page focuses on these `R` scripts.
+Click on the green `Code` button on GitHub.com to download the repository. The `FINIFLUX2.0_2022` folder contains the `Matlab` based program "Finite element method for quantifying groundwater fluxes to streams using Radon", along with installation instructions and a user manual in pdf format. All other files and folders in the repository are associated with `R` scripts that quantify Radon budgets in coastal, estuarine, and lake environments. The rest of this page focuses on these `R` scripts.
+
+The code is freely available to download and use. Please include a reference to the source in the resulting work (paper, report, presentation). APA and BibTeX citation formats are provided in the right hand column of the GitHub page of the repository. The authors made their best efforts but do not guarantee successful application of the code on all platforms and all data formats. 
 
 Use the `Rn_mass_balance.Rproj` file in the local project folder to launch the project in `RStudio` (you need to have `R` and `RStudio` already installed on your computer). **Verify in the top right corner of `RStudio` that you are working within the project.** When the project is launched the first time, the [`renv` package maneger](https://rstudio.github.io/renv/articles/collaborating.html "collaborating with renv") should automatically bootstrap itself, downloading and installing the appropriate version of `renv` into the project library. After this has completed, use `renv::restore()` to restore the project library locally on your machine. 
 
@@ -13,17 +15,15 @@ The folder structure is the following:
 
 The `R/setup.R` and `R/util_funs.R` scripts are not intended to be edited by the user.
 
-## THE REST OF THIS DOCUMENT NEEDS TO BE UPDATED
+The other scripts in the `R` folder analyze radon mass balance in coastal, estuarine and lake environments as implied by their names. Each step in the scripts is explained thoroughly via comments.
 
-The other scripts in the `R` folder analyze coastal radon mass balance from coastal radon time series measurements - at least 2 such measurements of the following variables are required: radon in water, radon in air, radon in groundwater, water temperature and salinity, water depth, and wind speed. The code is freely available to download and use. The use of the code assumes that a reference of the source will be included in resulting work (paper, report, presentation). APA and BibTeX citation formats are provided in the right hand column of the GitHub page. The authors made their best efforts but do not guarantee successful application of the code on all platforms and all data formats. 
-
-Input file format – `csv`. The file name is specified near the top of the `analysis.R` script, for example: 
+Input file format – `csv`. The file name is specified near the top of the `R` script, for example: 
 ````
 # input file name
 csv_file_in <- "sgd_ts_data_RADAquaMixDif.csv"
 ````
 
-The `csv` input file needs to have the following headings:
+The column headings in the `csv` files list the input variables used in the analysis; their descriptions are below:
 
 -   Time and date – acceptable formats: `yyyy/mm/dd hh:mm:ss`, `mm/dd/yyy hh:mm`, `mm/dd/yyy hh:mm:ss`
 
@@ -54,3 +54,4 @@ The `csv` input file needs to have the following headings:
 -   `f_mix_exp__Bqm2hr` - radon mixing losses may be measured directly using current meters or residence time estimates. If `f_mix_exp__Bqm2hr` are not been provided then losses by mixing are set to equal negative `f_Rn_net__Bqm2hr`, this is a conservative approach providing minimal estimate of mixing loss and more representative radon budgets may result by direct experimental measurements of mixing losses `f_mix_exp__Bqm2hr`. None of the values need to be filled in if experimental estimates are not available.
 
 The `csv` files in the `input` folder are examples of acceptable formats.
+

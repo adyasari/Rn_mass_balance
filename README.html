@@ -367,15 +367,21 @@ pre code {
 
 <div id="rn_mass_balance" class="section level1">
 <h1>Rn_mass_balance</h1>
-<p>Click on the green <code>Code</code> button on GitHub.com to clone,
-fork or download the repository. The <code>FINIFLUX2.0_2022</code>
-folder contains the <code>Matlab</code> based program “Finite element
-method for quantifying groundwater fluxes to streams using Radon”, along
-with installation instructions and a user manual in pdf format. All
-other files and folders in the repository are associated with
-<code>R</code> scripts that quantify Radon budgets in coastal,
-estuarine, and lake environments. The rest of this page focuses on these
-<code>R</code> scripts.</p>
+<p>Click on the green <code>Code</code> button on GitHub.com to download
+the repository. The <code>FINIFLUX2.0_2022</code> folder contains the
+<code>Matlab</code> based program “Finite element method for quantifying
+groundwater fluxes to streams using Radon”, along with installation
+instructions and a user manual in pdf format. All other files and
+folders in the repository are associated with <code>R</code> scripts
+that quantify Radon budgets in coastal, estuarine, and lake
+environments. The rest of this page focuses on these <code>R</code>
+scripts.</p>
+<p>The code is freely available to download and use. Please include a
+reference to the source in the resulting work (paper, report,
+presentation). APA and BibTeX citation formats are provided in the right
+hand column of the GitHub page of the repository. The authors made their
+best efforts but do not guarantee successful application of the code on
+all platforms and all data formats.</p>
 <p>Use the <code>Rn_mass_balance.Rproj</code> file in the local project
 folder to launch the project in <code>RStudio</code> (you need to have
 <code>R</code> and <code>RStudio</code> already installed on your
@@ -396,25 +402,16 @@ not be edited by a user)</li>
 </ul>
 <p>The <code>R/setup.R</code> and <code>R/util_funs.R</code> scripts are
 not intended to be edited by the user.</p>
-<div id="the-rest-of-this-document-needs-to-be-updated" class="section level2">
-<h2>THE REST OF THIS DOCUMENT NEEDS TO BE UPDATED</h2>
-<p>The code in the <code>analysis.R</code> script analyzes coastal radon
-mass balance from coastal radon time series measurements - at least 2
-such measurements of the following variables are required: radon in
-water, radon in air, radon in groundwater, water temperature and
-salinity, water depth, and wind speed. The code is freely available to
-download and use. The use of the code assumes that a reference of the
-source will be included in resulting work (paper, report, presentation).
-APA and BibTeX citation formats are provided in the right hand column of
-the GitHub page. The authors made their best efforts but do not
-guarantee successful application of the code on all platforms and all
-data formats.</p>
+<p>The other scripts in the <code>R</code> folder analyze radon mass
+balance in coastal, estuarine and lake environments as implied by their
+names. Each step in the scripts is explained thoroughly via
+comments.</p>
 <p>Input file format – <code>csv</code>. The file name is specified near
-the top of the <code>analysis.R</code> script, for example:</p>
+the top of the <code>R</code> script, for example:</p>
 <pre><code># input file name
 csv_file_in &lt;- &quot;sgd_ts_data_RADAquaMixDif.csv&quot;</code></pre>
-<p>The <code>csv</code> input file needs to have the following
-headings:</p>
+<p>The <code>csv</code> input files list the variables used in the
+analysis; their descriptions are below:</p>
 <ul>
 <li><p>Time and date – acceptable formats:
 <code>yyyy/mm/dd hh:mm:ss</code>, <code>mm/dd/yyy hh:mm</code>,
@@ -480,7 +477,6 @@ available.</p></li>
 </ul>
 <p>The <code>csv</code> files in the <code>input</code> folder are
 examples of acceptable formats.</p>
-</div>
 </div>
 
 
