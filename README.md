@@ -33,6 +33,18 @@ The column headings in the `csv` files list the input variables used in the anal
 
 -   `Rn_offshore__Bqm3` – radon in offshore ocean measurement in units of Bq/m3, either determined directly or approximated from offshore 226Ra measurements, however this will result in overestimate as it neglects radon evasion, this is used to subtract radon input from offshore by flood tide
 
+-   `Rn_dws_Bqm3` – 
+
+-   `q_dws__m3d` – 
+
+-   `Rn_ups__Bqm3` – 
+
+-   `q_ups__m3d` – 
+
+-   `v_box__m3` – 
+
+-   `a_box__m2` – 
+
 -   `Ra226_wat__Bqm3` – 226Ra in coastal ocean in units of Bq/m3, this is used to calculate excess 222Rn; all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable 226Ra values throughout the period of the measurements
 
 -   `Ra226_sed__Bqg` – 226Ra in sediments in units of Bq/g, this is used to calculate radon input by diffusion from sediments based on empirical relationship from experimental data by Burnett et al (2003):
