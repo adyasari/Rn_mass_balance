@@ -23,7 +23,7 @@ Input file format – `csv`. The file name is specified near the top of the `R` 
 csv_file_in <- "sgd_coastal_ts_data.csv"
 ````
 
-The column headings in the `csv` files list the input variables used in the analysis; their descriptions are below:
+The column headings in the `csv` files list the input variables used in the analysis. The `csv` files in the `input` folder are examples of acceptable formats. The descriptions of input variables (some used in multiple `R` scripts) are below:
 
 -   Time and date – acceptable formats: `yyyy/mm/dd hh:mm:ss`, `mm/dd/yyy hh:mm`, `mm/dd/yyy hh:mm:ss`
 
@@ -81,5 +81,4 @@ The column headings in the `csv` files list the input variables used in the anal
 
 - `wat_current__cms`currents measured in estuary in units of cm/s
 
-The `csv` files in the `input` folder are examples of acceptable formats.
 
