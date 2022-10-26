@@ -20,7 +20,7 @@ The other scripts in the `R` folder analyze radon mass balance in coastal, estua
 Input file format – `csv`. The file name is specified near the top of the `R` script, for example: 
 ````
 # input file name
-csv_file_in <- "sgd_ts_data_RADAquaMixDif.csv"
+csv_file_in <- "sgd_coastal_ts_data.csv"
 ````
 
 The column headings in the `csv` files list the input variables used in the analysis; their descriptions are below:
@@ -45,7 +45,7 @@ The column headings in the `csv` files list the input variables used in the anal
 
 -   `a_box__m2` – 
 
--   `Ra226_wat__Bqm3` – 226Ra in coastal ocean in units of Bq/m3, this is used to calculate excess 222Rn; all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable 226Ra values throughout the period of the measurements
+-   `Ra226_wat__Bqm3` – 226Ra in water in units of Bq/m3, this is used to calculate excess 222Rn; all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable 226Ra values throughout the period of the measurements
 
 -   `Ra226_sed__Bqg` – 226Ra in sediments in units of Bq/g, this is used to calculate radon input by diffusion from sediments based on empirical relationship from experimental data by Burnett et al (2003):
 
@@ -55,15 +55,15 @@ The column headings in the `csv` files list the input variables used in the anal
 
 -   `Rn_wat__Bqm3` – radon measured in water if available, otherwise `Rn_wat_Bqm3` will be calculated using `Rn_exch_Bqm3` and water `sal_wat` and `temp_wat__C`. None of the values need to be filled in if `Rn_exch__Bqm3` are provided.
 
--   `temp_wat__C` – coastal water temperature in degrees Celsius
+-   `temp_wat__C` – water temperature in degrees Celsius
 
--   `sal_wat` – coastal water salinity
+-   `sal_wat` – water salinity
 
 -   `wind__ms` – wind measurements in m/s
 
--   `depth__m` – coastal water depth measurement in units of m if water column is fully mixed, mixed layer depth if water is stratified. all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable Rn in groundwater values throughout the period of the measurements.
+-   `depth__m` – water depth measurement in units of `m` if water column is fully mixed, mixed layer depth if water is stratified. all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable Rn in groundwater values throughout the period of the measurements.
 
--   `f_mix_exp__Bqm2hr` - radon mixing losses may be measured directly using current meters or residence time estimates. If `f_mix_exp__Bqm2hr` are not been provided then losses by mixing are set to equal negative `f_Rn_net__Bqm2hr`, this is a conservative approach providing minimal estimate of mixing loss and more representative radon budgets may result by direct experimental measurements of mixing losses `f_mix_exp__Bqm2hr`. None of the values need to be filled in if experimental estimates are not available.
+-   `f_mix_exp__Bqm2hr` - radon mixing losses may be measured directly using current meters or residence time estimates. If `f_mix_exp__Bqm2hr` are not provided then losses by mixing are set to equal negative `f_Rn_net__Bqm2hr`, this is a conservative approach providing minimal estimate of mixing loss and more representative radon budgets may result by direct experimental measurements of mixing losses `f_mix_exp__Bqm2hr`. None of the values need to be filled in if experimental estimates are not available.
 
 The `csv` files in the `input` folder are examples of acceptable formats.
 
