@@ -33,17 +33,17 @@ The column headings in the `csv` files list the input variables used in the anal
 
 -   `Rn_offshore__Bqm3` – radon activity in offshore ocean in units of Bq/m3, either determined directly or approximated from offshore dissolved 226Ra measurements, however this latter will result in over-correction as it neglects radon evasion, `Rn_offshore__Bqm3` is used to correct for radon input from offshore brought to the coastline by flood tide
 
--   `Rn_dws_Bqm3` – 
+-   `Rn_dws_Bqm3` – radon activity at the downstream boundary in units of Bq/m3
 
--   `q_dws__m3d` – 
+-   `q_dws__m3d` – river discharge at the downstream boundary in units of m3/d
 
--   `Rn_ups__Bqm3` – 
+-   `Rn_ups__Bqm3` – radon activity at the upstream boundary in units of Bq/m3
 
--   `q_ups__m3d` – 
+-   `q_ups__m3d` – river discharge at the upstream boundary in units of m3/d
 
--   `v_box__m3` – 
+-   `v_box__m3` – box volume in units of m3
 
--   `a_box__m2` – 
+-   `a_box__m2` – box area in units of m2
 
 -   `Ra226_wat__Bqm3` – dissolved 226Ra in water in units of Bq/m3, this is used to calculate excess 222Rn; all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable 226Ra values throughout the period of the measurements
 
@@ -55,6 +55,13 @@ The column headings in the `csv` files list the input variables used in the anal
 
 -   `Rn_wat__Bqm3` – radon activity in water if available, otherwise `Rn_wat_Bqm3` will be calculated using `Rn_exch_Bqm3` and water `sal_wat` and `temp_wat__C`. None of `Rn_wat__Bqm3` values need to be filled in if `Rn_exch__Bqm3` are provided but one of these needs to be provided. The code checks if any `Rn_wat_Bqm3` is provided and if yes, it will only calculate radon mass balance for those rows where it is provided. Do not provide any numbers in `Rn_wat_Bqm3`if `Rn_exch__Bqm3` is to be used.
 
+-   `Rn_wat_bot__Bqm3` – radon activity in bottom estuarine water below the pycnocline in units of Bq/m3
+-   `Rn_wat_surf__Bqm3`  – radon activity in surface estuarine water above the pycnocline in units of Bq/m3
+
+-   `Rn_gw_surf__Bqm3`  – radon activity in groundwater representing the groundwater end-member discharging above the pycnocline in units of Bq/m3
+
+-   `Rn_gw_bot__Bqm3`  – radon activity in groundwater representing the groundwater end-member discharging below the pycnocline in units of Bq/m3
+
 -   `temp_wat__C` – water temperature in degrees Celsius
 
 -   `sal_wat` – coastal water salinity
@@ -65,7 +72,7 @@ The column headings in the `csv` files list the input variables used in the anal
 
 -   `f_mix_exp__Bqm2hr` - radon mixing losses may be measured directly using current meters or residence time estimates. If `f_mix_exp__Bqm2hr` are not provided then losses by mixing are set to equal negative `f_Rn_net__Bqm2hr`, this is a conservative approach providing minimal estimate of mixing loss and more representative radon budgets may result by direct experimental measurements of mixing losses provided as `f_mix_exp__Bqm2hr`. None of the values need to be filled in if experimental estimates are not available.
 
-- "wat_current__cms"
+- `wat_current__cms`currents measured in estuary in units of cm/s
 
 The `csv` files in the `input` folder are examples of acceptable formats.
 
