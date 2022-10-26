@@ -25,7 +25,7 @@ csv_file_in <- "sgd_coastal_ts_data.csv"
 
 The column headings in the `csv` files list the input variables used in the analysis. The `csv` files in the `input` folder are examples of acceptable formats. The descriptions of input variables (some used in multiple `R` scripts) are below:
 
--   Time and date – acceptable formats: `yyyy/mm/dd hh:mm:ss`, `mm/dd/yyy hh:mm`, `mm/dd/yyy hh:mm:ss`
+-   `time` – Time and date, acceptable formats: `yyyy/mm/dd hh:mm:ss`, `mm/dd/yyy hh:mm`, `mm/dd/yyy hh:mm:ss`
 
 -   `Rn_air__Bqm3` – atmospheric radon in air activity in units of Bq/m3, all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable atmospheric Rn in air values throughout the period of the measurements
 
