@@ -49,21 +49,8 @@ dat_tbl <- in_tbl %>%
     # all other time series parameters provided by the user should be averaged to this interval
     meas_t__min = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60,
 
-    # # change in water depth between two time stamps
-    # diff_owl__m = depth__m - lag(depth__m),
-
     # decay constant of Rn in hours
     lambda__hr = log(2) / (3.84 * 24),
-
-    # # if radon mixing losses are determined via an independent method (current measurements, residence time estimates)
-    # # then f_mix_exp__Bqm2hr should be provided in the spreadsheet
-    # # otherwise, mixing losses will be estimated from the Rn mass balance, see definition of f_Rn_mix__Bqm2hr below
-    # # the condition checks if a f_mix_exp__Bqm2hr column exists and if it is non-empty
-    # f_mix_exp__Bqm2hr = if (("f_mix_exp__Bqm2hr" %in% names(.)) && (!(f_mix_exp__Bqm2hr %>% is.na())) %>% any()) {
-    #   f_mix_exp__Bqm2hr %>% if_else(is.na(.), 0, .)
-    # } else {
-    #   0
-    # },
 
     # water temperature converted from degrees Celsius to Kelvin
     temp_wat__K = temp_wat__C + 273.15,
@@ -79,12 +66,6 @@ dat_tbl <- in_tbl %>%
     # it is converted to Rn in water in this step;
     # otherwise, the provided radon in water is used for further calculations
     # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
-    # CHANGED PRECEDENCE: Rn_wat__Bqm3 over Rn_exch__Bqm3 * kw_air
-    # Rn_wat__Bqm3 = if (!(Rn_exch__Bqm3 %>% is.null()) & (!(Rn_exch__Bqm3 %>% is.na())) %>% any()) {
-    #   Rn_exch__Bqm3 * kw_air
-    # } else {
-    #   Rn_wat__Bqm3
-    # },
     Rn_wat__Bqm3 = if (("Rn_wat__Bqm3" %in% names(.)) && (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
       Rn_wat__Bqm3
     } else {
@@ -129,7 +110,7 @@ dat_tbl <- in_tbl %>%
     },
 
     # salt mass balance to estimate vertical radon exchange across the estuarine pycnocline 
-    q_vert_m3d = (q_dws__m3d * sal_dws - q_ups__m3d * sal_ups) / (sal_bot - sal_dws),
+    q_vert_m3d = (q_dws__m3d * sal_dws - q_ups__m3d * sal_ups) / (sal_btm - sal_dws),
     
     # groundwater discharge into the surface water above the pycnocline
     q_gw_surf__m3m2d = (
@@ -139,18 +120,18 @@ dat_tbl <- in_tbl %>%
         q_vert_m3d * Rn_wat_surf__Bqm3 - 
         q_ups__m3d * Rn_ups__Bqm3 - 
         Ra226_wat__Bqm3 * lambda__hr / 24 * v_box__m3 - 
-        q_vert_m3d * Rn_wat_bot__Bqm3
+        q_vert_m3d * Rn_wat_btm__Bqm3
       ) / Rn_gw_surf__Bqm3,
     
     # groundwater discharge into the bottom water below the pycnocline
     q_gw_btm__m3m2d = (
-      q_vert_m3d * Rn_wat_bot__Bqm3 + 
-        Rn_wat_bot__Bqm3 * lambda__hr / 24 * v_box__m3 - 
+      q_vert_m3d * Rn_wat_btm__Bqm3 + 
+        Rn_wat_btm__Bqm3 * lambda__hr / 24 * v_box__m3 - 
         q_dws__m3d * Rn_dws__Bqm3 - 
         Ra226_wat__Bqm3 * lambda__hr / 24 * v_box__m3 - 
         f_dif__Bqm2hr * a_box__m2 - 
         q_vert_m3d * Rn_wat_surf__Bqm3
-      ) /  Rn_gw_bot__Bqm3,
+      ) /  Rn_gw_btm__Bqm3,
     
     # total groundwater discharge into the entire estuary accounting for inputs above and below the pycnocline
     q_gw__m3m2d = q_gw_surf__m3m2d + q_gw_btm__m3m2d,

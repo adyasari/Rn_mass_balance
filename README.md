@@ -55,16 +55,23 @@ The column headings in the `csv` files list the input variables used in the anal
 
 -   `Rn_wat__Bqm3` – radon activity in water if available, otherwise `Rn_wat_Bqm3` will be calculated using `Rn_exch_Bqm3` and water `sal_wat` and `temp_wat__C`. None of `Rn_wat__Bqm3` values need to be filled in if `Rn_exch__Bqm3` are provided but one of these needs to be provided. The code checks if any `Rn_wat_Bqm3` is provided and if yes, it will only calculate radon mass balance for those rows where it is provided. Do not provide any numbers in `Rn_wat_Bqm3`if `Rn_exch__Bqm3` is to be used.
 
--   `Rn_wat_bot__Bqm3` – radon activity in bottom estuarine water below the pycnocline in units of Bq/m3
--   `Rn_wat_surf__Bqm3`  – radon activity in surface estuarine water above the pycnocline in units of Bq/m3
+-   `Rn_wat_btm__Bqm3` – radon activity in bottom estuarine water below the pycnocline in units of Bq/m3.
+
+-   `Rn_wat_surf__Bqm3`  – radon activity in surface estuarine water above the pycnocline in units of Bq/m3.
+
+-   `Rn_gw_btm__Bqm3`  – radon activity in groundwater representing the groundwater end-member discharging below the pycnocline in units of Bq/m3
 
 -   `Rn_gw_surf__Bqm3`  – radon activity in groundwater representing the groundwater end-member discharging above the pycnocline in units of Bq/m3
-
--   `Rn_gw_bot__Bqm3`  – radon activity in groundwater representing the groundwater end-member discharging below the pycnocline in units of Bq/m3
 
 -   `temp_wat__C` – water temperature in degrees Celsius
 
 -   `sal_wat` – coastal water salinity
+
+-   `sal_btm` – coastal water salinity below the pycnocline
+
+-   `sal_dws` – coastal water salinity at the downstream estuarine boundary
+
+-   `sal_ups` – coastal water salinity at the upstream estuarine boundary
 
 -   `wind__ms` – wind measurements in m/s
 
