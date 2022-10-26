@@ -92,7 +92,7 @@ dat_tbl <- in_tbl %>%
     },
     
     # Rn losses by evasion into the atmosphere are calculated either according to Borges et al., 2004 or according to MacIntyre et al. (1995)
-    # if wat_current__cms is provided in the spreadsheet, then ...
+    # if wat_current__cms is provided in the spreadsheet, then currents and winds speed are used to estimate turbulence and hence k (Borges et al. 2004), otherwise only wind speed is used (MacIntyre et al. 1995).
     # for wind speeds above 3.6 m/s Sc^-1/2 and for wind speeds below 3.6 m/s Sc^-2/3 is applied (Turner et al., 1996);
     # for wind speeds below 1.5 m/s k is assumed to be constant and equivalent to wind speeds of 1.5 m/s (Ocampo-torres et al., 1994)
     # note that kinematic viscosity is considered constant, one can calculate more accurate values that account for salinity and temperature
@@ -128,10 +128,10 @@ dat_tbl <- in_tbl %>%
       )
     },
 
-    # explain this equation
+    # salt mass balance to estimate vertical radon exchange across the estuarine pycnocline 
     q_vert_m3d = (q_dws__m3d * sal_dws - q_ups__m3d * sal_ups) / (sal_bot - sal_dws),
     
-    # explain this equation
+    # groundwater discharge into the surface water above the pycnocline
     q_gw_surf__m3m2d = (
       q_dws__m3d * Rn_dws__Bqm3 + 
         f_Rn_atm__Bqm2hr * 24 * a_box__m2 + 
@@ -142,7 +142,7 @@ dat_tbl <- in_tbl %>%
         q_vert_m3d * Rn_wat_bot__Bqm3
       ) / Rn_gw_surf__Bqm3,
     
-    # explain this equation
+    # groundwater discharge into the bottom water below the pycnocline
     q_gw_btm__m3m2d = (
       q_vert_m3d * Rn_wat_bot__Bqm3 + 
         Rn_wat_bot__Bqm3 * lambda__hr / 24 * v_box__m3 - 
@@ -152,7 +152,7 @@ dat_tbl <- in_tbl %>%
         q_vert_m3d * Rn_wat_surf__Bqm3
       ) /  Rn_gw_bot__Bqm3,
     
-    # explain this equation
+    # total groundwater discharge into the entire estuary accounting for inputs above and below the pycnocline
     q_gw__m3m2d = q_gw_surf__m3m2d + q_gw_btm__m3m2d,
     
   ) %>%
