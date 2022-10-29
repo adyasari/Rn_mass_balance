@@ -157,7 +157,7 @@ dat_tbl <- in_tbl %>%
 # results are saved in a csv file
 write_csv(dat_tbl, here(study_folder, "output", "sgd_coastal_ts_rn_budget.csv"), na = "")
   
-# END OF RADON BUDGET CALCULATION
+# END OF RADON BUDGET AND GROUNDWATER FLUX CALCULATION
 
 # *************************
 #  end ----

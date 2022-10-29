@@ -1,5 +1,6 @@
 # *************************
-# Rn mass balance calculation for time series estuarine radon budget
+# Rn mass balance calculation for spatial survey estuarine radon budget
+# Based off of eq. in Santos et al., 2010; doi:10.1016/j.marchem.2010.03.003
 # Author: Peter Fuleky
 # Date: 2022-05-22
 # notes:
@@ -24,7 +25,7 @@ csv_file_in <- "sgd_estuary_stratified_data.csv"
 #  load data ----
 # *************************
 
-# load the time series
+# load the survey data
 in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
   # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
   mutate(across(.cols = 1, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
@@ -37,17 +38,6 @@ in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
 # creates data table
 dat_tbl <- in_tbl %>%
   mutate(
-
-    # the loaded data should have a fixed periodicity
-    # missing values are filled in by interpolating linearly when a single value 
-    # is missing from the time series (e.g. due to issues with measurement devices etc.)
-    Rn_wat__Bqm3 = if_else(is.na(Rn_wat__Bqm3), (lag(Rn_wat__Bqm3) + lead(Rn_wat__Bqm3)) / 2, Rn_wat__Bqm3),
-    temp_wat__C = if_else(is.na(temp_wat__C), (lag(temp_wat__C) + lead(temp_wat__C)) / 2, temp_wat__C),
-    sal_wat = if_else(is.na(sal_wat), (lag(sal_wat) + lead(sal_wat)) / 2, sal_wat),
-
-    # calculates coastal radon measurement time interval in minutes based on provided measurement times,
-    # all other time series parameters provided by the user should be averaged to this interval
-    meas_t__min = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60,
 
     # decay constant of Rn in hours
     lambda__hr = log(2) / (3.84 * 24),
@@ -144,7 +134,7 @@ dat_tbl <- in_tbl %>%
 # results saved in a csv file
 write_csv(dat_tbl, here(study_folder, "output", "sgd_estuary_stratified_rn_budget.csv"), na = "")
 
-# END OF RADON BUDGET CALCULATION
+# END OF RADON BUDGET AND GROUNDWATER FLUX CALCULATION
 
 # *************************
 #  end ----

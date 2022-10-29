@@ -1,5 +1,7 @@
 # *************************
-# Rn mass balance calculation for time series estuarine radon budget
+# Rn mass balance calculation for spatial survey estuarine radon budget
+# Based off equations in Hussain et al., 1999 (10.1016/S0304-4203(99)00015-8) &
+# Schwartz, 2003 (doi: 10.1016/S0272-7714(02)00118-X)
 # Author: Peter Fuleky
 # Date: 2022-05-22
 # notes:
@@ -24,7 +26,7 @@ csv_file_in <- "sgd_estuary_unstratified_data.csv"
 #  load data ----
 # *************************
 
-# load the time series
+# load the survey data
 in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
   # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
   mutate(across(.cols = 1, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
@@ -38,32 +40,8 @@ in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
 dat_tbl <- in_tbl %>%
   mutate(
 
-    # the loaded data should have a fixed periodicity
-    # missing values are filled in by interpolating linearly when a single value 
-    # is missing from the time series (e.g. due to issues with measurement devices etc.)
-    Rn_wat__Bqm3 = if_else(is.na(Rn_wat__Bqm3), (lag(Rn_wat__Bqm3) + lead(Rn_wat__Bqm3)) / 2, Rn_wat__Bqm3),
-    temp_wat__C = if_else(is.na(temp_wat__C), (lag(temp_wat__C) + lead(temp_wat__C)) / 2, temp_wat__C),
-    sal_wat = if_else(is.na(sal_wat), (lag(sal_wat) + lead(sal_wat)) / 2, sal_wat),
-
-    # calculates coastal radon measurement time interval in minutes based on provided measurement times,
-    # all other time series parameters provided by the user should be averaged to this interval
-    meas_t__min = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60,
-
-    # # change in water depth between two time stamps
-    # diff_owl__m = depth__m - lag(depth__m),
-
     # decay constant of Rn in hours
     lambda__hr = log(2) / (3.84 * 24),
-
-    # # if radon mixing losses are determined via an independent method (current measurements, residence time estimates)
-    # # then f_mix_exp__Bqm2hr should be provided in the spreadsheet
-    # # otherwise, mixing losses will be estimated from the Rn mass balance, see definition of f_Rn_mix__Bqm2hr below
-    # # the condition checks if a f_mix_exp__Bqm2hr column exists and if it is non-empty
-    # f_mix_exp__Bqm2hr = if (("f_mix_exp__Bqm2hr" %in% names(.)) && (!(f_mix_exp__Bqm2hr %>% is.na())) %>% any()) {
-    #   f_mix_exp__Bqm2hr %>% if_else(is.na(.), 0, .)
-    # } else {
-    #   0
-    # },
 
     # water temperature converted from degrees Celsius to Kelvin
     temp_wat__K = temp_wat__C + 273.15,
@@ -79,12 +57,6 @@ dat_tbl <- in_tbl %>%
     # it is converted to Rn in water in this step;
     # otherwise, the provided radon in water is used for further calculations
     # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
-    # CHANGED PRECEDENCE: Rn_wat__Bqm3 over Rn_exch__Bqm3 * kw_air
-    # Rn_wat__Bqm3 = if (!(Rn_exch__Bqm3 %>% is.null()) & (!(Rn_exch__Bqm3 %>% is.na())) %>% any()) {
-    #   Rn_exch__Bqm3 * kw_air
-    # } else {
-    #   Rn_wat__Bqm3
-    # },
     Rn_wat__Bqm3 = if (("Rn_wat__Bqm3" %in% names(.)) && (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
       Rn_wat__Bqm3
     } else {
@@ -145,7 +117,7 @@ dat_tbl <- in_tbl %>%
 # results saved in a csv file
 write_csv(dat_tbl, here(study_folder, "output", "sgd_estuary_unstratified_rn_budget.csv"), na = "")
 
-# END OF RADON BUDGET CALCULATION
+# END OF RADON BUDGET AND GROUNDWATER FLUX CALCULATION
 
 # *************************
 #  end ----
