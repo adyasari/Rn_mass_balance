@@ -26,7 +26,7 @@ csv_file_in <- "sgd_estuary_unstratified_data.csv"
 #  load data ----
 # *************************
 
-# load the survey data
+# load the estuarine survey data
 in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
   # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
   mutate(across(.cols = 1, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
@@ -101,7 +101,7 @@ dat_tbl <- in_tbl %>%
     },
 
     # groundwater discharge into the estuary
-    q_gw__m3m2d = (q_dws__m3d * Rn_dws__Bqm3 + 
+    q_gw__m3m2d = (q_dws__m3d * Rn_wat__Bqm3 + 
              f_Rn_atm__Bqm2hr * 24 * a_box__m2 + 
              Rn_wat__Bqm3 * lambda__hr / 24 * v_box__m3 - 
              q_ups__m3d * Rn_ups__Bqm3 - 

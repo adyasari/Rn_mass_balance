@@ -104,7 +104,7 @@ dat_tbl <- in_tbl %>%
     
     # groundwater discharge into the surface water above the pycnocline
     q_gw_surf__m3m2d = (
-      q_dws__m3d * Rn_dws__Bqm3 + 
+      q_dws__m3d * Rn_wat_surf__Bqm3 + 
         f_Rn_atm__Bqm2hr * 24 * a_box__m2 + 
         Rn_wat_surf__Bqm3 * lambda__hr / 24 * v_box__m3 + 
         q_vert_m3d * Rn_wat_surf__Bqm3 - 
@@ -117,7 +117,7 @@ dat_tbl <- in_tbl %>%
     q_gw_btm__m3m2d = (
       q_vert_m3d * Rn_wat_btm__Bqm3 + 
         Rn_wat_btm__Bqm3 * lambda__hr / 24 * v_box__m3 - 
-        q_dws__m3d * Rn_dws__Bqm3 - 
+        q_dws__m3d * Rn_wat_btm__Bqm3 - 
         Ra226_wat__Bqm3 * lambda__hr / 24 * v_box__m3 - 
         f_dif__Bqm2hr * a_box__m2 - 
         q_vert_m3d * Rn_wat_surf__Bqm3
