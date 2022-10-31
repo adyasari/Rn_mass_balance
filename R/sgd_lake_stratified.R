@@ -83,11 +83,11 @@ dat_tbl <- in_tbl %>%
       ),
 
     # groundwater discharge into the surface water layer above the pycnocline called epilmnion (check units)
-    q_epi__m3d = if_else(str_detect(layerID, "epi"), (Rn_wat__Bqm3 * lambda__hr * d_box__m + f_Rn_atm__Bqm2hr) / Rn_gw__Bqm3 * a_box__m2, NA_real_),
+    q_epi__m3d = if_else(str_detect(layerID, "epi"), (Rn_wat__Bqm3 * lambda__hr * d_box__m + f_Rn_atm__Bqm2hr) * 24 / Rn_gw__Bqm3 * a_box__m2, NA_real_),
     # groundwater discharge into the middle water layer called metalimnion isolated from the atmosphere by epilimnion and bottom sediments by hypolimnion (check units)
-    q_meta__m3d = if_else(str_detect(layerID, "meta"), (Rn_wat__Bqm3 * lambda__hr * d_box__m) / Rn_gw__Bqm3 * a_box__m2, NA_real_),
+    q_meta__m3d = if_else(str_detect(layerID, "meta"), (Rn_wat__Bqm3 * lambda__hr * d_box__m) * 24 / Rn_gw__Bqm3 * a_box__m2, NA_real_),
     # groundwater discharge into the bottom water layer called hypolimnion below the pycnocline (check units)
-    q_hypo__m3d = if_else(str_detect(layerID, "hypo"), (Rn_wat__Bqm3 * lambda__hr * d_box__m + f_dif__Bqm2hr) / Rn_gw__Bqm3 * a_box__m2, NA_real_),
+    q_hypo__m3d = if_else(str_detect(layerID, "hypo"), (Rn_wat__Bqm3 * lambda__hr * d_box__m - f_dif__Bqm2hr) * 24 / Rn_gw__Bqm3 * a_box__m2, NA_real_),
     
     # total groundwater discharge into the lake accounting for inputs into all its layers (check units)
     q_gw__m3m2d = mean(q_epi__m3d, na.rm = TRUE) + mean(q_meta__m3d, na.rm = TRUE) + mean(q_hypo__m3d, na.rm = TRUE),
