@@ -24,7 +24,7 @@ csv_file_in <- "sgd_lake_unstratified_data.csv"
 #  load data ----
 # *************************
 
-# load the time series
+# load lake time series
 in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
   # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
   mutate(across(.cols = 1, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
