@@ -29,11 +29,13 @@ The column headings in the `csv` files list the input variables used in the anal
 
 -   `Rn_air__Bqm3` – atmospheric radon in air activity in units of Bq/m3, all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable atmospheric Rn in air values throughout the period of the measurements
 
--   `Rn_gw__Bqm3` – radon activity in groundwater in units of Bq/m3, all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable Rn in groundwater values throughout the period of the measurements
+-   `Rn_gw__Bqm3` – radon activity in groundwater in units of Bq/m3, all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable Rn in groundwater values throughout the period of the measurements. This variable is used for unstratified systems. for stratified estuary option see `Rn_gw_btm__Bqm3` and `Rn_gw_surf__Bqm3`
+
+-   `Rn_gw_btm__Bqm3`  – radon activity in groundwater representing the groundwater end-member discharging below the pycnocline in units of Bq/m3
+
+-   `Rn_gw_surf__Bqm3`  – radon activity in groundwater representing the groundwater end-member discharging above the pycnocline in units of Bq/m3
 
 -   `Rn_offshore__Bqm3` – radon activity in offshore ocean in units of Bq/m3, either determined directly or approximated from offshore dissolved 226Ra measurements, however this latter will result in over-correction as it neglects radon evasion, `Rn_offshore__Bqm3` is used to correct for radon input from offshore brought to the coastline by flood tide
-
--   `Rn_dws_Bqm3` – radon activity at the downstream estuarine boundary in units of Bq/m3
 
 -   `q_dws__m3d` – river discharge at the downstream estuarine boundary in units of m3/d
 
@@ -41,19 +43,18 @@ The column headings in the `csv` files list the input variables used in the anal
 
 -   `q_ups__m3d` – river discharge at the upstream estuarine boundary in units of m3/d
 
--   `layerID` – EXPLAIN
+-   `layerID` – stratified lakes will have 3 layers, use `epi` for epilimnion, `meta` for metalimnion, and 'hypo' for hypolimnion to identify variables belonging to each layer
 
--   `d_box__m` – box depth in units of m
+-   `depth__m` – water depth measurement in units of `m` if water column is fully mixed, water layer depth if coastal model brackish water surface plume is considered; all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable values throughout the period of the measurements.
+-   `d_box__m` – box depth in units of m used in cases of stratified water layers
 
--   `a_box__m2` – box area in units of m2
+-   `a_box__m2` – box area in units of m2 used in cases of stratified water layers
 
 -   `v_box__m3` – box volume in units of m3
 
--   `Ra226_wat__Bqm3` – dissolved 226Ra in water in units of Bq/m3, this is used to calculate excess 222Rn; all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable 226Ra values throughout the period of the measurements
+-   `Ra226_wat__Bqm3` – dissolved 226Ra in water in units of Bq/m3, this is used to calculate excess 222Rn and ingrowth of 222Rn from `Ra226_wat__Bqm3`dissolved in the water column; all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable 226Ra values throughout the period of the measurements
 
--   `Ra226_sed__Bqg` – 226Ra in sediments in units of Bq/g, this is used to calculate radon input by diffusion from sediments based on empirical relationship from experimental data by Burnett et al (2003):
-
--   `f_dif__Bqm2hr` = (495 x `Ra226_sed__Bqg` \* 60 + 18.2) / 24; all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable 226Ra values throughout the period of the measurements
+-   `f_dif__Bqm2hr` it is up to the user what method they want to use to derive/estimate Rn diffusion from bottom sediments, this program does not calculate radon fluxes by diffusion from sediments but it uses a user provided value in Bq/m2/hr; all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable diffusion values throughout the period of the measurements; set to 0 if unknown or negligible, alse set to 0 if coastal model brackish water surface plume, stratified estuary surface layer or epilimnion and metalimnion in lakes are considered.
 
 -   `Rn_exch__Bqm3` – radon measured using `RAD-Aqua` in an air-water gas exchanger in units of Bq/m3, all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable Rn values throughout the period of the measurements. None of the values need to be filled in if `Rn_wat__Bqm3` are provided.
 
@@ -63,25 +64,19 @@ The column headings in the `csv` files list the input variables used in the anal
 
 -   `Rn_wat_surf__Bqm3`  – radon activity in surface estuarine water above the pycnocline in units of Bq/m3.
 
--   `Rn_gw_btm__Bqm3`  – radon activity in groundwater representing the groundwater end-member discharging below the pycnocline in units of Bq/m3
-
--   `Rn_gw_surf__Bqm3`  – radon activity in groundwater representing the groundwater end-member discharging above the pycnocline in units of Bq/m3
-
 -   `temp_wat__C` – water temperature in degrees Celsius
 
--   `sal_wat` – coastal water salinity
+-   `sal_wat` – water salinity
 
--   `sal_btm` – coastal water salinity below the pycnocline
+-   `sal_btm` – water salinity below the estuarine pycnocline
 
--   `sal_dws` – coastal water salinity at the downstream estuarine boundary
+-   `sal_dws` – water salinity at the downstream estuarine boundary
 
--   `sal_ups` – coastal water salinity at the upstream estuarine boundary
+-   `sal_ups` – water salinity at the upstream estuarine boundary
 
 -   `wind__ms` – wind measurements in m/s
 
--   `depth__m` – water depth measurement in units of `m` if water column is fully mixed, mixed layer depth if water is stratified. all rows have to be filled even if the same number is applicable for all measurements but this format allows the use of variable values throughout the period of the measurements.
-
--   `f_mix_exp__Bqm2hr` - radon mixing losses may be measured directly using current meters or residence time estimates. If `f_mix_exp__Bqm2hr` are not provided then losses by mixing are set to equal negative `f_Rn_net__Bqm2hr`, this is a conservative approach providing minimal estimate of mixing loss and more representative radon budgets may result by direct experimental measurements of mixing losses provided as `f_mix_exp__Bqm2hr`. None of the values need to be filled in if experimental estimates are not available.
+-   `f_mix_exp__Bqm2hr` - radon mixing losses in the coastal model may be measured directly using current meters or residence time estimates. If `f_mix_exp__Bqm2hr` are not provided then losses by mixing in teh coastal ocean are set to equal negative `f_Rn_net__Bqm2hr`, this is a conservative approach providing minimal estimate of mixing loss and more representative radon budgets may result by direct experimental measurements of mixing losses provided as `f_mix_exp__Bqm2hr`. No values should be filled in if experimental estimates are not available.
 
 - `wat_current__cms`currents measured in estuary in units of cm/s
 
