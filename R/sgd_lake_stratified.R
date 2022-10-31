@@ -25,7 +25,7 @@ csv_file_in <- "sgd_lake_stratified_data.csv"
 #  load data ----
 # *************************
 
-# load the survey data
+# load the stratified lake data
 in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
   # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
   mutate(across(.cols = 1, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
@@ -45,7 +45,7 @@ dat_tbl <- in_tbl %>%
     # water temperature converted from degrees Celsius to Kelvin
     temp_wat__K = temp_wat__C + 273.15,
 
-    # water/air partitioning coefficient kw_air based on water temperature and salinity;
+    # water/air partitioning coefficient kw_air based on water temperature and salinity (add salinity 0.1 if unknown);
     # calculations and coefficients from Schubert et al. 2012
     kw_air =
       exp(-76.14 + 120.36 * (100 / temp_wat__K) + 31.26 * log(temp_wat__K / 100) + sal_wat *
@@ -82,14 +82,14 @@ dat_tbl <- in_tbl %>%
             (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60
       ),
 
-    # groundwater discharge into the surface water above the pycnocline (check units)
+    # groundwater discharge into the surface water layer above the pycnocline called epilmnion (check units)
     q_epi__m3d = if_else(str_detect(layerID, "epi"), (Rn_wat__Bqm3 * lambda__hr * d_box__m + f_Rn_atm__Bqm2hr) / Rn_gw__Bqm3 * a_box__m2, NA_real_),
-    # groundwater discharge into the middle water (check units)
+    # groundwater discharge into the middle water layer called metalimnion isolated from the atmosphere by epilimnion and bottom sediments by hypolimnion (check units)
     q_meta__m3d = if_else(str_detect(layerID, "meta"), (Rn_wat__Bqm3 * lambda__hr * d_box__m) / Rn_gw__Bqm3 * a_box__m2, NA_real_),
-    # groundwater discharge into the bottom water below the pycnocline (check units)
+    # groundwater discharge into the bottom water layer called hypolimnion below the pycnocline (check units)
     q_hypo__m3d = if_else(str_detect(layerID, "hypo"), (Rn_wat__Bqm3 * lambda__hr * d_box__m + f_dif__Bqm2hr) / Rn_gw__Bqm3 * a_box__m2, NA_real_),
     
-    # total groundwater discharge into the entire estuary accounting for inputs above and below the pycnocline (check units)
+    # total groundwater discharge into the lake accounting for inputs into all its layers (check units)
     q_gw__m3m2d = mean(q_epi__m3d, na.rm = TRUE) + mean(q_meta__m3d, na.rm = TRUE) + mean(q_hypo__m3d, na.rm = TRUE),
     
   ) %>%
