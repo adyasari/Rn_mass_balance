@@ -36,6 +36,19 @@ in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
 #  calculations ----
 # *************************
 
+
+
+# FROM TRISTAN:
+# -	Have Rn in water as calculated before in code, or as a direct input parameter
+# -	Have atmospheric evasion as calculated before in code, or as a direct input parameter
+# -	From before:
+#   o	Fatm may be calculated differently, many options for this. Perhaps present approach by Carini et al., 1996 (Note that I am not confident that this is the best approach):
+#   - k600 = 0.045 + 2.0277 x u10 x (Sc/600)^-0.5
+# - and Fatm = k(Cw - alpha * Catm) (MacIntyre 1995)
+# - If tidal range > 2m, then also need to account for k600_current (impact negligible for tidal ranges under 2m) - for mass balance perhaps write in the assumption is that the estuary is microtidal and that additional considerations need to be made for current following Borges et al., 2004 and O’Connor & Dobbins, 1958 if the estuary is macrotidal.
+
+
+
 # creates data table
 dat_tbl <- in_tbl %>%
   mutate(
@@ -46,22 +59,30 @@ dat_tbl <- in_tbl %>%
     # water temperature converted from degrees Celsius to Kelvin
     temp_wat__K = temp_wat__C + 273.15,
 
+    # volume of the box
+    v_box__m3 = a_box__m2 * depth__m, 
+    
+    # average of upstream and downstream values
+    Rn_wat__Bqm3 = (Rn_wat_ups__Bqm3 + Rn_wat_dws__Bqm3) / 2, 
+    sal_wat = (sal_wat_ups + sal_wat_dws) / 2, 
+
     # water/air partitioning coefficient kw_air based on water temperature and salinity;
     # calculations and coefficients from Schubert et al. 2012
     kw_air =
       exp(-76.14 + 120.36 * (100 / temp_wat__K) + 31.26 * log(temp_wat__K / 100) + sal_wat *
         (-0.2631 + 0.1673 * (temp_wat__K / 100) + (-0.0270 * (temp_wat__K / 100)^2))) *
         temp_wat__K / 273.15,
-
-    # if Rad-Aqua was used to collect radon data and radon in the exchanger (therefore in air) is provided 
-    # it is converted to Rn in water in this step;
-    # otherwise, the provided radon in water is used for further calculations
-    # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
-    Rn_wat__Bqm3 = if (("Rn_wat__Bqm3" %in% names(.)) && (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
-      Rn_wat__Bqm3
-    } else {
-      Rn_exch__Bqm3 * kw_air
-    },
+    
+    # SINCE Rn_wat__Bqm3 ASSUMED TO BE DIRECTLY PROVIDED BY USER (SEE UPSTREAM AND DOWNSTREAM ABOVE), NOT USING THIS
+    # # if Rad-Aqua was used to collect radon data and radon in the exchanger (therefore in air) is provided 
+    # # it is converted to Rn in water in this step;
+    # # otherwise, the provided radon in water is used for further calculations
+    # # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
+    # Rn_wat__Bqm3 = if (("Rn_wat__Bqm3" %in% names(.)) && (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
+    #   Rn_wat__Bqm3
+    # } else {
+    #   Rn_exch__Bqm3 * kw_air
+    # },
     
     # Rn losses by evasion into the atmosphere are calculated either according to Borges et al., 2004 or according to MacIntyre et al. (1995)
     # if wat_current__cms is provided in the spreadsheet, then currents and winds speed are used to estimate turbulence and hence k (Borges et al. 2004), otherwise only wind speed is used (MacIntyre et al. 1995).
@@ -99,17 +120,23 @@ dat_tbl <- in_tbl %>%
             (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60
       )
     },
+    
+    # volume of the box
+    v_box__m3 = a_box__m2 * depth__m, 
 
     # groundwater discharge into the estuary
-    q_gw__m3m2d = (q_dws__m3d * Rn_wat__Bqm3 + 
-             f_Rn_atm__Bqm2hr * 24 * a_box__m2 + 
-             Rn_wat__Bqm3 * lambda__hr / 24 * v_box__m3 - 
-             q_ups__m3d * Rn_ups__Bqm3 - 
-             f_dif__Bqm2hr * 24 * a_box__m2 - 
-             Ra226_wat__Bqm3 * lambda__hr / 24 * v_box__m3
-           ) / Rn_gw__Bqm3,
+    q_gw__m3m2d = (q_dws__m3d * Rn_wat_dws__Bqm3 + # Advection - out (Bq/d)
+             f_Rn_atm__Bqm2hr * 24 * a_box__m2 + # Rn flux via atmospheric evasion (Bq/m2/d and then converted to Bq/d)
+               Rn_wat_dws__Bqm3 * lambda__hr / 24 * v_box__m3 - # Rn decay out of box (Bq/d)
+             q_ups__m3d * Rn_wat_ups__Bqm3 - # Advection - in (Bq/d)
+             # f_dif__Bqm2hr * 24 * a_box__m2 - # this line does not show up in Tristan's equations, Henrietta said it would be better to have it
+             Ra226_wat__Bqm3 * lambda__hr / 24 * v_box__m3 # Ra-226 production in the box (Bq/d) PF: Rn production????
+           ) / a_box__m2 / Rn_gw__Bqm3,
     
   ) %>%
+  
+  # add a row with total sgd for estuary 
+  add_row(q_gw__m3m2d = sum(.$q_gw__m3m2d)) %>% 
   
   # drop columns with no values (keep those with at least one value)
   select(where(~ (!(.x %>% is.na())) %>% any()))

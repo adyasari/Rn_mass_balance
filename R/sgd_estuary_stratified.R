@@ -45,22 +45,38 @@ dat_tbl <- in_tbl %>%
     # water temperature converted from degrees Celsius to Kelvin
     temp_wat__K = temp_wat__C + 273.15,
 
+    # volume of the box
+    v_box_surf__m3 = a_box__m2 * d_box_surf__m, 
+    v_box_btm__m3 = a_box__m2 * d_box_btm__m, 
+    
+    # average of upstream and downstream values
+    Rn_wat_surf__Bqm3 = (Rn_wat_surf_ups__Bqm3 + Rn_wat_surf_dws__Bqm3) / 2, 
+    Rn_wat_btm__Bqm3 = (Rn_wat_btm_ups__Bqm3 + Rn_wat_btm_dws__Bqm3) / 2, 
+    sal_wat_surf = (sal_wat_surf_ups + sal_wat_surf_dws) / 2, 
+    sal_wat_btm = (sal_wat_btm_ups + sal_wat_btm_dws) / 2, 
+    
+    # # salt mass balance to estimate vertical radon exchange across the estuarine pycnocline 
+    # q_vert_m3d = (q_dws__m3d * sal_dws - q_ups__m3d * sal_ups) / (sal_btm - sal_dws),
+    # from Tristan: Vertical water exchange across pycnocline (m3/d) COMPARE TO PREVIOUS VERSION
+    q_vert_m3d = (sal_wat_surf_dws - sal_wat_surf_ups) * q_surf_ups__m3d / (sal_wat_btm - sal_wat_surf_dws),
+    
     # water/air partitioning coefficient kw_air based on water temperature and salinity;
     # calculations and coefficients from Schubert et al. 2012
     kw_air =
-      exp(-76.14 + 120.36 * (100 / temp_wat__K) + 31.26 * log(temp_wat__K / 100) + sal_wat *
+      exp(-76.14 + 120.36 * (100 / temp_wat__K) + 31.26 * log(temp_wat__K / 100) + sal_wat_surf *
         (-0.2631 + 0.1673 * (temp_wat__K / 100) + (-0.0270 * (temp_wat__K / 100)^2))) *
         temp_wat__K / 273.15,
 
-    # if Rad-Aqua was used to collect radon data and radon in the exchanger (therefore in air) is provided 
-    # it is converted to Rn in water in this step;
-    # otherwise, the provided radon in water is used for further calculations
-    # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
-    Rn_wat__Bqm3 = if (("Rn_wat__Bqm3" %in% names(.)) && (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
-      Rn_wat__Bqm3
-    } else {
-      Rn_exch__Bqm3 * kw_air
-    },
+    # SINCE Rn_wat__Bqm3 ASSUMED TO BE DIRECTLY PROVIDED BY USER (SEE UPSTREAM AND DOWNSTREAM ABOVE), NOT USING THIS
+    # # if Rad-Aqua was used to collect radon data and radon in the exchanger (therefore in air) is provided 
+    # # it is converted to Rn in water in this step;
+    # # otherwise, the provided radon in water is used for further calculations
+    # # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
+    # Rn_wat__Bqm3 = if (("Rn_wat__Bqm3" %in% names(.)) && (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
+    #   Rn_wat__Bqm3
+    # } else {
+    #   Rn_exch__Bqm3 * kw_air
+    # },
     
     # Rn losses by evasion into the atmosphere are calculated either according to Borges et al., 2004 or according to MacIntyre et al. (1995)
     # if wat_current__cms is provided in the spreadsheet, then currents and winds speed are used to estimate turbulence and hence k (Borges et al. 2004), otherwise only wind speed is used (MacIntyre et al. 1995).
@@ -70,63 +86,63 @@ dat_tbl <- in_tbl %>%
     f_Rn_atm__Bqm2hr = if (("wat_current__cms" %in% names(.)) && (!(wat_current__cms %>% is.na())) %>% any()) {
       case_when(
         wind__ms > 3.6 ~
-          ((1 + 1.719 * wat_current__cms^(1 / 2) * depth__m^(-1 / 2) + 2.58 * wind__ms) *
+          ((1 + 1.719 * wat_current__cms^(1 / 2) * d_box_surf__m^(-1 / 2) + 2.58 * wind__ms) *
             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-1 / 2)) / 100 / 60 *
-            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
+            (Rn_wat_surf__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
         wind__ms > 1.5 ~
-          ((1 + 1.719 * wat_current__cms^(1 / 2) * depth__m^(-1 / 2) + 2.58 * wind__ms) *
+          ((1 + 1.719 * wat_current__cms^(1 / 2) * d_box_surf__m^(-1 / 2) + 2.58 * wind__ms) *
             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
-            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
+            (Rn_wat_surf__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
         TRUE ~
-          ((1 + 1.719 * wat_current__cms^(1 / 2) * depth__m^(-1 / 2) + 2.58 * 1.5) *
+          ((1 + 1.719 * wat_current__cms^(1 / 2) * d_box_surf__m^(-1 / 2) + 2.58 * 1.5) *
             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
-            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60
+            (Rn_wat_surf__Bqm3 - kw_air * Rn_air__Bqm3) * 60
       )
     } else {
       case_when(
         wind__ms > 3.6 ~
           (0.45 * wind__ms^1.6 *
             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-1 / 2)) / 100 / 60 *
-            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
+            (Rn_wat_surf__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
         wind__ms > 1.5 ~
           (0.45 * wind__ms^1.6 *
             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
-            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
+            (Rn_wat_surf__Bqm3 - kw_air * Rn_air__Bqm3) * 60,
         TRUE ~
           (0.45 * 1.5^1.6 *
             ((0.0086 / 10^(-(980 / temp_wat__K + 1.59))) / 600)^(-2 / 3)) / 100 / 60 *
-            (Rn_wat__Bqm3 - kw_air * Rn_air__Bqm3) * 60
+            (Rn_wat_surf__Bqm3 - kw_air * Rn_air__Bqm3) * 60
       )
     },
-
-    # salt mass balance to estimate vertical radon exchange across the estuarine pycnocline 
-    q_vert_m3d = (q_dws__m3d * sal_dws - q_ups__m3d * sal_ups) / (sal_btm - sal_dws),
     
     # groundwater discharge into the surface water above the pycnocline
     q_gw_surf__m3m2d = (
-      q_dws__m3d * Rn_wat_surf__Bqm3 + 
-        f_Rn_atm__Bqm2hr * 24 * a_box__m2 + 
-        Rn_wat_surf__Bqm3 * lambda__hr / 24 * v_box__m3 + 
-        q_vert_m3d * Rn_wat_surf__Bqm3 - 
-        q_ups__m3d * Rn_ups__Bqm3 - 
-        Ra226_wat__Bqm3 * lambda__hr / 24 * v_box__m3 - 
-        q_vert_m3d * Rn_wat_btm__Bqm3
-      ) / Rn_gw_surf__Bqm3,
+      q_surf_dws__m3d * Rn_wat_surf_dws__Bqm3 +  # PF: eq 1
+        f_Rn_atm__Bqm2hr * 24 * a_box__m2 +  # PF: eq 2
+        Rn_wat_surf_ups__Bqm3 * lambda__hr / 24 * v_box_surf__m3 +  # PF: eq 3
+        q_vert_m3d * Rn_wat_surf__Bqm3 -  # PF: eq 4
+        q_surf_ups__m3d * Rn_wat_surf_ups__Bqm3 -  # PF: eq 5
+        Ra226_wat_surf__Bqm3 * lambda__hr / 24 * v_box_surf__m3 -  # PF: eq 6
+        q_vert_m3d * Rn_wat_btm__Bqm3  # PF: eq 7
+      ) / a_box__m2 / Rn_gw_surf__Bqm3,
     
     # groundwater discharge into the bottom water below the pycnocline
     q_gw_btm__m3m2d = (
-      q_vert_m3d * Rn_wat_btm__Bqm3 + 
-        Rn_wat_btm__Bqm3 * lambda__hr / 24 * v_box__m3 - 
-        q_dws__m3d * Rn_wat_btm__Bqm3 - 
-        Ra226_wat__Bqm3 * lambda__hr / 24 * v_box__m3 - 
-        f_dif__Bqm2hr * 24 * a_box__m2 - 
-        q_vert_m3d * Rn_wat_surf__Bqm3
-      ) /  Rn_gw_btm__Bqm3,
+      q_vert_m3d * Rn_wat_btm__Bqm3 + # PF: eq 1
+        Rn_wat_btm__Bqm3 * lambda__hr / 24 * v_box_btm__m3 - # PF: eq 2
+        q_btm_dws__m3d * Rn_wat_btm__Bqm3 - # PF: eq 3
+        Ra226_wat_btm__Bqm3 * lambda__hr / 24 * v_box_btm__m3 - # PF: eq 4
+        f_dif__Bqm2hr * 24 * a_box__m2 - # PF: eq 5
+        q_vert_m3d * Rn_wat_surf__Bqm3 # PF: eq 6
+      ) / a_box__m2 / Rn_gw_btm__Bqm3,
     
     # total groundwater discharge into the entire estuary accounting for inputs above and below the pycnocline
     q_gw__m3m2d = q_gw_surf__m3m2d + q_gw_btm__m3m2d,
     
   ) %>%
+  
+  # add a row with total sgd for estuary 
+  add_row(q_gw__m3m2d = sum(.$q_gw__m3m2d)) %>% 
   
   # drop columns with no values (keep those with at least one value)
   select(where(~ (!(.x %>% is.na())) %>% any()))
