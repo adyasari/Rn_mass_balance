@@ -19,7 +19,7 @@ source(here::here("R", "setup.R"))
 study_folder <- "."
 
 # input file name
-csv_file_in <- "sgd_estuary_stratified_data.csv"
+csv_file_in <- "estuary_stratified_data.csv"
 
 # *************************
 #  load data ----
@@ -27,7 +27,6 @@ csv_file_in <- "sgd_estuary_stratified_data.csv"
 
 # load the survey data
 in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
-  # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
   mutate(across(.cols = 1, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
   mutate(across(.cols = -1, .fns = as.numeric))
 
@@ -55,9 +54,7 @@ dat_tbl <- in_tbl %>%
     sal_wat_surf = (sal_wat_surf_ups + sal_wat_surf_dws) / 2, 
     sal_wat_btm = (sal_wat_btm_ups + sal_wat_btm_dws) / 2, 
     
-    # # salt mass balance to estimate vertical radon exchange across the estuarine pycnocline 
-    # q_vert_m3d = (q_dws__m3d * sal_dws - q_ups__m3d * sal_ups) / (sal_btm - sal_dws),
-    # from Tristan: Vertical water exchange across pycnocline (m3/d) COMPARE TO PREVIOUS VERSION
+    # Vertical water exchange across pycnocline (m3/d)
     q_vert_m3d = (sal_wat_surf_dws - sal_wat_surf_ups) * q_surf_ups__m3d / (sal_wat_btm - sal_wat_surf_dws),
     
     # water/air partitioning coefficient kw_air based on water temperature and salinity;
@@ -67,17 +64,6 @@ dat_tbl <- in_tbl %>%
         (-0.2631 + 0.1673 * (temp_wat__K / 100) + (-0.0270 * (temp_wat__K / 100)^2))) *
         temp_wat__K / 273.15,
 
-    # SINCE Rn_wat__Bqm3 ASSUMED TO BE DIRECTLY PROVIDED BY USER (SEE UPSTREAM AND DOWNSTREAM ABOVE), NOT USING THIS
-    # # if Rad-Aqua was used to collect radon data and radon in the exchanger (therefore in air) is provided 
-    # # it is converted to Rn in water in this step;
-    # # otherwise, the provided radon in water is used for further calculations
-    # # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
-    # Rn_wat__Bqm3 = if (("Rn_wat__Bqm3" %in% names(.)) && (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
-    #   Rn_wat__Bqm3
-    # } else {
-    #   Rn_exch__Bqm3 * kw_air
-    # },
-    
     # Rn losses by evasion into the atmosphere are calculated either according to Borges et al., 2004 or according to MacIntyre et al. (1995)
     # if wat_current__cms is provided in the spreadsheet, then currents and winds speed are used to estimate turbulence and hence k (Borges et al. 2004), otherwise only wind speed is used (MacIntyre et al. 1995).
     # for wind speeds above 3.6 m/s Sc^-1/2 and for wind speeds below 3.6 m/s Sc^-2/3 is applied (Turner et al., 1996);
@@ -148,7 +134,7 @@ dat_tbl <- in_tbl %>%
   select(where(~ (!(.x %>% is.na())) %>% any()))
 
 # results saved in a csv file
-write_csv(dat_tbl, here(study_folder, "output", "sgd_estuary_stratified_rn_budget.csv"), na = "")
+write_csv(dat_tbl, here(study_folder, "output", "estuary_stratified_rn_budget.csv"), na = "")
 
 # END OF RADON BUDGET AND GROUNDWATER FLUX CALCULATION
 

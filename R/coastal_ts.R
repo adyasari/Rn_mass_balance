@@ -18,7 +18,7 @@ source(here::here("R", "setup.R"))
 study_folder <- "."
 
 # input file name
-csv_file_in <- "sgd_coastal_ts_data.csv"
+csv_file_in <- "coastal_ts_data.csv"
 
 # *************************
 #  load data ----
@@ -155,7 +155,7 @@ dat_tbl <- in_tbl %>%
   select(where(~(!(.x %>% is.na())) %>% any()))
 
 # results are saved in a csv file
-write_csv(dat_tbl, here(study_folder, "output", "sgd_coastal_ts_rn_budget.csv"), na = "")
+write_csv(dat_tbl, here(study_folder, "output", "coastal_ts_rn_budget.csv"), na = "")
   
 # END OF RADON BUDGET AND GROUNDWATER FLUX CALCULATION
 

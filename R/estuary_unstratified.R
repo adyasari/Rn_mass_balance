@@ -20,7 +20,7 @@ source(here::here("R", "setup.R"))
 study_folder <- "."
 
 # input file name
-csv_file_in <- "sgd_estuary_unstratified_data.csv"
+csv_file_in <- "estuary_unstratified_data.csv"
 
 # *************************
 #  load data ----
@@ -28,26 +28,12 @@ csv_file_in <- "sgd_estuary_unstratified_data.csv"
 
 # load the estuarine survey data
 in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
-  # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
   mutate(across(.cols = 1, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
   mutate(across(.cols = -1, .fns = as.numeric))
 
 # *************************
 #  calculations ----
 # *************************
-
-
-
-# FROM TRISTAN:
-# -	Have Rn in water as calculated before in code, or as a direct input parameter
-# -	Have atmospheric evasion as calculated before in code, or as a direct input parameter
-# -	From before:
-#   o	Fatm may be calculated differently, many options for this. Perhaps present approach by Carini et al., 1996 (Note that I am not confident that this is the best approach):
-#   - k600 = 0.045 + 2.0277 x u10 x (Sc/600)^-0.5
-# - and Fatm = k(Cw - alpha * Catm) (MacIntyre 1995)
-# - If tidal range > 2m, then also need to account for k600_current (impact negligible for tidal ranges under 2m) - for mass balance perhaps write in the assumption is that the estuary is microtidal and that additional considerations need to be made for current following Borges et al., 2004 and O’Connor & Dobbins, 1958 if the estuary is macrotidal.
-
-
 
 # creates data table
 dat_tbl <- in_tbl %>%
@@ -72,17 +58,6 @@ dat_tbl <- in_tbl %>%
       exp(-76.14 + 120.36 * (100 / temp_wat__K) + 31.26 * log(temp_wat__K / 100) + sal_wat *
         (-0.2631 + 0.1673 * (temp_wat__K / 100) + (-0.0270 * (temp_wat__K / 100)^2))) *
         temp_wat__K / 273.15,
-    
-    # SINCE Rn_wat__Bqm3 ASSUMED TO BE DIRECTLY PROVIDED BY USER (SEE UPSTREAM AND DOWNSTREAM ABOVE), NOT USING THIS
-    # # if Rad-Aqua was used to collect radon data and radon in the exchanger (therefore in air) is provided 
-    # # it is converted to Rn in water in this step;
-    # # otherwise, the provided radon in water is used for further calculations
-    # # the condition checks if a Rn_exch__Bqm3 column exists and if it is non-empty
-    # Rn_wat__Bqm3 = if (("Rn_wat__Bqm3" %in% names(.)) && (!(Rn_wat__Bqm3 %>% is.na())) %>% any()) {
-    #   Rn_wat__Bqm3
-    # } else {
-    #   Rn_exch__Bqm3 * kw_air
-    # },
     
     # Rn losses by evasion into the atmosphere are calculated either according to Borges et al., 2004 or according to MacIntyre et al. (1995)
     # if wat_current__cms is provided in the spreadsheet, then currents and winds speed are used to estimate turbulence and hence k (Borges et al. 2004), otherwise only wind speed is used (MacIntyre et al. 1995).
@@ -129,20 +104,19 @@ dat_tbl <- in_tbl %>%
              f_Rn_atm__Bqm2hr * 24 * a_box__m2 + # Rn flux via atmospheric evasion (Bq/m2/d and then converted to Bq/d)
                Rn_wat_dws__Bqm3 * lambda__hr / 24 * v_box__m3 - # Rn decay out of box (Bq/d)
              q_ups__m3d * Rn_wat_ups__Bqm3 - # Advection - in (Bq/d)
-             # f_dif__Bqm2hr * 24 * a_box__m2 - # this line does not show up in Tristan's equations, Henrietta said it would be better to have it
              Ra226_wat__Bqm3 * lambda__hr / 24 * v_box__m3 # Ra-226 production in the box (Bq/d) PF: Rn production????
            ) / a_box__m2 / Rn_gw__Bqm3,
     
   ) %>%
   
-  # add a row with total sgd for estuary 
+  # add a row with total gw for estuary 
   add_row(q_gw__m3m2d = sum(.$q_gw__m3m2d)) %>% 
   
   # drop columns with no values (keep those with at least one value)
   select(where(~ (!(.x %>% is.na())) %>% any()))
 
 # results saved in a csv file
-write_csv(dat_tbl, here(study_folder, "output", "sgd_estuary_unstratified_rn_budget.csv"), na = "")
+write_csv(dat_tbl, here(study_folder, "output", "estuary_unstratified_rn_budget.csv"), na = "")
 
 # END OF RADON BUDGET AND GROUNDWATER FLUX CALCULATION
 

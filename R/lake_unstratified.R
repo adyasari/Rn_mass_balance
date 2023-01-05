@@ -1,5 +1,6 @@
 # *************************
-# Rn mass balance calculation for time series lake radon budget based on Dimova and Burnett, 2011
+# Rn mass balance calculation for time series lake radon budget
+# Based on Dimova and Burnett, 2011
 # Author: Peter Fuleky
 # Date: 2022-05-22
 # notes:
@@ -18,7 +19,7 @@ source(here::here("R", "setup.R"))
 study_folder <- "."
 
 # input file name
-csv_file_in <- "sgd_lake_unstratified_data.csv"
+csv_file_in <- "lake_unstratified_data.csv"
 
 # *************************
 #  load data ----
@@ -26,7 +27,6 @@ csv_file_in <- "sgd_lake_unstratified_data.csv"
 
 # load lake time series
 in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
-  # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
   mutate(across(.cols = 1, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
   mutate(across(.cols = -1, .fns = as.numeric))
 
@@ -50,13 +50,10 @@ Rn_ss_calc <- function(in_tbl, optim_driver = NULL){
       meas_t__h = (time %>% as.numeric() - lag(time %>% as.numeric())) / 60 / 60,
       
       # wind__ms = wind__ms, # not lagged
-      temp_wat__C = lag(temp_wat__C), # lagged WHY??? parameters are taken from previous measurement step to account for radon measurement delay???
+      temp_wat__C = lag(temp_wat__C), # lagged: parameters are taken from previous measurement step to account for radon measurement delay
       temp_wat__K = temp_wat__C + 273.15,
-      # mole_diff_Rn__cm2s = 10^(-(980 / (273 + temp_wat__C) + 1.59)),
       mole_diff_Rn__m2s = 10^(-(980 / (273 + temp_wat__C) + 1.59))/10000,
-      # dens_wat__gcm3 = (999.842594 + (0.06793952) * temp_wat__C - (0.00909529) * temp_wat__C^2 + (0.0001001685) * temp_wat__C^3 - (0.000001120083) * temp_wat__C^4 + (0.000000006536332) * temp_wat__C^5) / 1000,
       dens_wat__kgm3 = (999.842594 + (0.06793952) * temp_wat__C - (0.00909529) * temp_wat__C^2 + (0.0001001685) * temp_wat__C^3 - (0.000001120083) * temp_wat__C^4 + (0.000000006536332) * temp_wat__C^5),
-      # abs_visc_wat__gscm = 0.00002414 * 10^(247.8 / (temp_wat__K - 140)) * 1000 / 100,
       abs_visc_wat__kgsm = 0.00002414 * 10^(247.8 / (temp_wat__K - 140)),
       kin_visc_wat__m2s = abs_visc_wat__kgsm / dens_wat__kgm3,
       schm_num = kin_visc_wat__m2s / mole_diff_Rn__m2s,
@@ -73,8 +70,8 @@ Rn_ss_calc <- function(in_tbl, optim_driver = NULL){
         Rn_exch__Bqm3 * kw_air
       },
       
-      Rn_air__Bqm3 = lag(Rn_air__Bqm3), # lagged WHY???
-      depth__m = lag(depth__m), # lagged WHY???
+      Rn_air__Bqm3 = lag(Rn_air__Bqm3), # lagged
+      depth__m = lag(depth__m), # lagged
       
       # decay constant of Rn in hours
       lambda__s = log(2) / (3.84 * 24 * 3600),
@@ -140,7 +137,7 @@ dat_out <- Rn_ss_calc(in_tbl)
 dat_tbl <- dat_out$dat
 
 # intermediate results saved in a csv file
-# write_csv(dat_tbl, here(study_folder, "output", "sgd_lake_unstratified_rn_budget.csv"), na = "")
+# write_csv(dat_tbl, here(study_folder, "output", "lake_unstratified_rn_budget.csv"), na = "")
 
 # *************************
 #  optimization ----
@@ -180,7 +177,7 @@ dat_out <- Rn_ss_calc(in_tbl, optim_driver)
 dat_tbl <- dat_out$dat
 
 # results saved in a csv file
-write_csv(dat_tbl, here(study_folder, "output", "sgd_lake_unstratified_rn_budget.csv"), na = "")
+write_csv(dat_tbl, here(study_folder, "output", "lake_unstratified_rn_budget.csv"), na = "")
   
 # END OF RADON BUDGET CALCULATION
 
@@ -191,7 +188,7 @@ dat_tbl %>%
   geom_point(mapping = aes(y = final_mc_Rn__Bqm3), color = "red") +
   labs(y = "Rn in water: actual (black) vs model (red)") +
   theme_light()
-ggsave(here(study_folder, "output", "sgd_lake_unstratified_rn_budget.png"))
+ggsave(here(study_folder, "output", "lake_unstratified_rn_budget.png"))
   
 # *************************
 #  end ----

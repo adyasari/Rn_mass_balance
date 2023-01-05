@@ -1,6 +1,5 @@
 # *************************
-# Rn mass balance calculation for spatial survey estuarine radon budget
-# Based off of eq. in Santos et al., 2010; doi:10.1016/j.marchem.2010.03.003
+# Rn mass balance calculation for spatial survey lake radon budget
 # Author: Peter Fuleky
 # Date: 2022-05-22
 # notes:
@@ -19,7 +18,7 @@ source(here::here("R", "setup.R"))
 study_folder <- "."
 
 # input file name
-csv_file_in <- "sgd_lake_stratified_data.csv"
+csv_file_in <- "lake_stratified_data.csv"
 
 # *************************
 #  load data ----
@@ -27,7 +26,6 @@ csv_file_in <- "sgd_lake_stratified_data.csv"
 
 # load the stratified lake data
 in_tbl <- read_csv(here(study_folder, "input", csv_file_in)) %>%
-  # mutate(across(.cols = 1, .fns = ~ force_tz(., tzone = ""))) %>%
   mutate(across(.cols = 1, .fns = ~ lubridate::parse_date_time(., c("ymdHMS", "ymdHM", "mdyHM", "mdyHMS")))) %>%
   mutate(across(.cols = -c(time, layerID), .fns = as.numeric))
 
@@ -98,7 +96,7 @@ dat_tbl <- in_tbl %>%
   select(where(~ (!(.x %>% is.na())) %>% any()))
 
 # results saved in a csv file
-write_csv(dat_tbl, here(study_folder, "output", "sgd_lake_stratified_rn_budget.csv"), na = "")
+write_csv(dat_tbl, here(study_folder, "output", "lake_stratified_rn_budget.csv"), na = "")
 
 # END OF RADON BUDGET AND GROUNDWATER FLUX CALCULATION
 
