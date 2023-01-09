@@ -54,7 +54,7 @@ dat_tbl <- in_tbl %>%
     sal_wat_surf = (sal_wat_surf_ups + sal_wat_surf_dws) / 2, 
     sal_wat_btm = (sal_wat_btm_ups + sal_wat_btm_dws) / 2, 
     
-    # Vertical water exchange across pycnocline (m3/d)
+    # Vertical water exchange across pycnocline (Fexchange, m3/d)
     q_vert_m3d = (sal_wat_surf_dws - sal_wat_surf_ups) * q_surf_ups__m3d / (sal_wat_btm - sal_wat_surf_dws),
     
     # water/air partitioning coefficient kw_air based on water temperature and salinity;
@@ -103,23 +103,23 @@ dat_tbl <- in_tbl %>%
     
     # groundwater discharge into the surface water above the pycnocline
     q_gw_surf__m3m2d = (
-      q_surf_dws__m3d * Rn_wat_surf_dws__Bqm3 +  # PF: eq 1
-        f_Rn_atm__Bqm2hr * 24 * a_box__m2 +  # PF: eq 2
-        Rn_wat_surf_ups__Bqm3 * lambda__hr / 24 * v_box_surf__m3 +  # PF: eq 3
-        q_vert_m3d * Rn_wat_surf__Bqm3 -  # PF: eq 4
-        q_surf_ups__m3d * Rn_wat_surf_ups__Bqm3 -  # PF: eq 5
-        Ra226_wat_surf__Bqm3 * lambda__hr / 24 * v_box_surf__m3 -  # PF: eq 6
-        q_vert_m3d * Rn_wat_btm__Bqm3  # PF: eq 7
+      q_surf_dws__m3d * Rn_wat_surf_dws__Bqm3 +  # Fdownstream
+        f_Rn_atm__Bqm2hr * 24 * a_box__m2 +  # Fatm
+        Rn_wat_surf_ups__Bqm3 * lambda__hr / 24 * v_box_surf__m3 +  # Fdec
+        q_vert_m3d * Rn_wat_surf__Bqm3 -  # Fexchange
+        q_surf_ups__m3d * Rn_wat_surf_ups__Bqm3 -  # Fupstream
+        Ra226_wat_surf__Bqm3 * lambda__hr / 24 * v_box_surf__m3 -  # Fprod
+        q_vert_m3d * Rn_wat_btm__Bqm3  # Fexchange
       ) / a_box__m2 / Rn_gw_surf__Bqm3,
     
     # groundwater discharge into the bottom water below the pycnocline
     q_gw_btm__m3m2d = (
-      q_vert_m3d * Rn_wat_btm__Bqm3 + # PF: eq 1
-        Rn_wat_btm__Bqm3 * lambda__hr / 24 * v_box_btm__m3 - # PF: eq 2
-        q_btm_dws__m3d * Rn_wat_btm__Bqm3 - # PF: eq 3
-        Ra226_wat_btm__Bqm3 * lambda__hr / 24 * v_box_btm__m3 - # PF: eq 4
-        f_dif__Bqm2hr * 24 * a_box__m2 - # PF: eq 5
-        q_vert_m3d * Rn_wat_surf__Bqm3 # PF: eq 6
+      q_vert_m3d * Rn_wat_btm__Bqm3 + # Fexchange
+        Rn_wat_btm__Bqm3 * lambda__hr / 24 * v_box_btm__m3 - # Fdec
+        q_btm_dws__m3d * Rn_wat_btm__Bqm3 - # Fdownstream
+        Ra226_wat_btm__Bqm3 * lambda__hr / 24 * v_box_btm__m3 - # Fprod
+        f_dif__Bqm2hr * 24 * a_box__m2 - # Fdiff
+        q_vert_m3d * Rn_wat_surf__Bqm3 # Fexchange
       ) / a_box__m2 / Rn_gw_btm__Bqm3,
     
     # total groundwater discharge into the entire estuary accounting for inputs above and below the pycnocline
