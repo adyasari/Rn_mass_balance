@@ -23,7 +23,7 @@ Input file format – `csv`. The file name is specified near the top of the `R` 
 csv_file_in <- "sgd_coastal_ts_data.csv"
 ````
 
-The column headings in the `csv` files list the input variables used in the analysis. The `csv` files in the `input` folder are examples of acceptable formats. The descriptions of input variables (some used in multiple `R` scripts) are below:
+The column headings in the `csv` files list the input variables used in the analysis. The `csv` files in the `input` folder are examples of acceptable formats. Don't change the column headings, and remember that `R` is case sensitive, so `time` $\neq$ `Time`; they are different variables. The descriptions of input variables (some used in multiple `R` scripts) are below:
 
 -   `time` – Time and date, acceptable formats: `yyyy-mm-dd hh:mm:ss`, `mm/dd/yyy hh:mm`, `mm/dd/yyy hh:mm:ss`
 
